@@ -1,207 +1,273 @@
 <!DOCTYPE html>
-<html lang="id" data-theme="medieval-midnight">
+<html lang="id" data-theme="bento-grid">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0b1020">
-  <meta name="description" content="FocusPulse — simple fantasy Pomodoro, tasks, ambient sounds, and daily streaks.">
-  <title>FocusPulse — Fantasy Focus Dashboard</title>
-
+  <meta name="theme-color" content="#0b0d12">
+  <meta name="description" content="FocusPulse — adaptive Pomodoro, tasks, habits, and immersive ambient focus.">
+  <title>FocusPulse — Adaptive Focus Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="./src/css/main.css">
 </head>
 <body>
-  <div class="ambient-orb orb-one" aria-hidden="true"></div>
-  <div class="ambient-orb orb-two" aria-hidden="true"></div>
+  <div class="scene-layer" aria-hidden="true">
+    <span class="scene-orb orb-a"></span>
+    <span class="scene-orb orb-b"></span>
+    <span class="scene-grid"></span>
+  </div>
 
   <header class="topbar">
     <a class="brand" href="#" aria-label="FocusPulse home">
-      <span class="brand-mark"><i data-lucide="sparkles"></i></span>
-      <span>Focus<span>Pulse</span></span>
+      <span class="brand-symbol"><i data-lucide="zap"></i></span>
+      <span class="brand-name">Focus<span>Pulse</span></span>
+      <span class="brand-edition" id="brand-edition">BENTO</span>
     </a>
 
-    <div class="header-actions">
-      <div class="streak-pill" title="Daily activity streak">
+    <div class="header-status">
+      <div class="status-chip">
         <i data-lucide="flame"></i>
         <strong id="streak-count">0</strong>
-        <span data-i18n="dayStreak">day streak</span>
+        <span data-i18n="dayStreak">hari streak</span>
       </div>
+      <div class="status-chip session-chip">
+        <i data-lucide="circle-check-big"></i>
+        <strong id="header-session-count">0</strong>
+        <span data-i18n="sessions">sesi</span>
+      </div>
+    </div>
 
-      <label class="compact-control">
-        <span class="sr-only" data-i18n="language">Language</span>
-        <select id="language-select" onchange="setLanguage(this.value)" aria-label="Language">
-          <option value="id">ID</option>
-          <option value="en">EN</option>
+    <div class="header-actions">
+      <label class="language-picker" aria-label="Language">
+        <i data-lucide="languages"></i>
+        <select id="language-select" onchange="setLanguage(this.value)">
+          <option value="id">Indonesia</option>
+          <option value="en">English</option>
         </select>
+        <i data-lucide="chevron-down"></i>
       </label>
-
-      <label class="compact-control theme-control">
-        <i data-lucide="palette"></i>
-        <select id="theme-select" onchange="setTheme(this.value)" aria-label="Theme"></select>
-      </label>
+      <button class="studio-button" onclick="openDesignStudio('themes')">
+        <span class="studio-button-icon"><i data-lucide="swatch-book"></i></span>
+        <span>
+          <small data-i18n="designMode">Design mode</small>
+          <strong id="current-theme-label">Bento Grid</strong>
+        </span>
+        <i data-lucide="chevron-right"></i>
+      </button>
     </div>
   </header>
 
-  <main class="dashboard">
-    <section class="hero-card panel">
-      <div class="panel-eyebrow">
-        <span><i data-lucide="timer"></i> <span data-i18n="focusRitual">Focus ritual</span></span>
-        <span id="session-counter">0 sessions</span>
+  <main class="workspace">
+    <section class="panel timer-panel" data-area="timer">
+      <div class="panel-head">
+        <div>
+          <span class="eyebrow"><i data-lucide="timer-reset"></i><span data-i18n="focusSession">Focus session</span></span>
+          <h1 id="timer-heading" data-i18n="enterFocus">Enter focus mode</h1>
+        </div>
+        <button class="panel-action" onclick="openDesignStudio('timer')" aria-label="Timer presets">
+          <i data-lucide="sliders-horizontal"></i>
+        </button>
       </div>
 
-      <div class="mode-tabs" role="tablist" aria-label="Timer mode">
-        <button id="mode-focus" class="mode-tab active" onclick="setTimerMode('focus')" data-i18n="focus">Focus</button>
-        <button id="mode-short" class="mode-tab" onclick="setTimerMode('short')" data-i18n="shortBreak">Short Break</button>
-        <button id="mode-long" class="mode-tab" onclick="setTimerMode('long')" data-i18n="longBreak">Long Break</button>
+      <div class="mode-switch" role="tablist" aria-label="Timer mode">
+        <button id="mode-focus" class="mode-option active" onclick="setTimerMode('focus')" data-i18n="focus">Fokus</button>
+        <button id="mode-short" class="mode-option" onclick="setTimerMode('short')" data-i18n="shortBreak">Pendek</button>
+        <button id="mode-long" class="mode-option" onclick="setTimerMode('long')" data-i18n="longBreak">Panjang</button>
       </div>
 
-      <div class="timer-wrap">
-        <svg class="timer-ring" viewBox="0 0 260 260" aria-hidden="true">
-          <circle class="ring-track" cx="130" cy="130" r="116"></circle>
-          <circle id="timer-progress-ring" class="ring-progress" cx="130" cy="130" r="116"></circle>
+      <div class="timer-stage">
+        <svg class="timer-ring" viewBox="0 0 300 300" aria-hidden="true">
+          <defs>
+            <linearGradient id="timer-gradient" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--accent)"></stop>
+              <stop offset="100%" stop-color="var(--accent-2)"></stop>
+            </linearGradient>
+          </defs>
+          <circle class="ring-track" cx="150" cy="150" r="132"></circle>
+          <circle id="timer-progress-ring" class="ring-progress" cx="150" cy="150" r="132"></circle>
         </svg>
-        <div class="timer-copy">
-          <div id="timer-display" class="timer-display">25:00</div>
-          <div id="timer-status" class="timer-status" data-i18n="ready">Ready</div>
+        <div class="timer-core">
+          <span id="timer-display">25:00</span>
+          <small id="timer-status" data-i18n="ready">Siap memulai</small>
         </div>
       </div>
 
-      <div class="timer-actions">
-        <button id="timer-toggle" class="button primary large" onclick="toggleTimer()">
+      <div class="timer-controls">
+        <button class="round-control" onclick="resetTimer()" data-i18n-title="reset" title="Reset"><i data-lucide="rotate-ccw"></i></button>
+        <button id="timer-toggle" class="primary-control" onclick="toggleTimer()">
           <i id="timer-toggle-icon" data-lucide="play"></i>
-          <span id="timer-toggle-label" data-i18n="start">Start</span>
+          <span id="timer-toggle-label" data-i18n="start">Mulai</span>
         </button>
-        <button class="icon-button" onclick="resetTimer()" data-i18n-title="reset" title="Reset" aria-label="Reset">
-          <i data-lucide="rotate-ccw"></i>
-        </button>
-        <button class="icon-button" onclick="skipTimer()" data-i18n-title="skip" title="Skip" aria-label="Skip">
-          <i data-lucide="skip-forward"></i>
-        </button>
+        <button class="round-control" onclick="skipTimer()" data-i18n-title="skip" title="Skip"><i data-lucide="skip-forward"></i></button>
       </div>
 
-      <div id="active-task-bar" class="active-task-bar">
-        <i data-lucide="swords"></i>
-        <span data-i18n="currentQuest">Current quest:</span>
-        <strong id="active-task-name" data-i18n="noneSelected">None selected</strong>
-      </div>
-
-      <details class="settings-drawer">
-        <summary><i data-lucide="sliders-horizontal"></i> <span data-i18n="pomodoroOptions">Pomodoro options</span></summary>
-        <div class="settings-content">
-          <label>
-            <span data-i18n="preset">Preset</span>
-            <select id="preset-select" onchange="applyPreset(this.value)">
-              <option value="quick">Quick Sprint — 15 / 3 / 8</option>
-              <option value="classic" selected>Classic — 25 / 5 / 15</option>
-              <option value="deep">Deep Work — 40 / 8 / 20</option>
-              <option value="flow">Flow State — 50 / 10 / 25</option>
-              <option value="epic">Epic Quest — 90 / 20 / 30</option>
-              <option value="custom">Custom</option>
-            </select>
-          </label>
-          <div class="duration-grid">
-            <label><span data-i18n="focus">Focus</span><input id="duration-focus" type="number" min="1" max="180" value="25"></label>
-            <label><span data-i18n="shortBreak">Short</span><input id="duration-short" type="number" min="1" max="60" value="5"></label>
-            <label><span data-i18n="longBreak">Long</span><input id="duration-long" type="number" min="1" max="90" value="15"></label>
-          </div>
-          <button class="button secondary" onclick="saveCustomDurations()" data-i18n="applyDuration">Apply durations</button>
+      <div class="active-focus">
+        <span class="active-focus-icon"><i data-lucide="crosshair"></i></span>
+        <div>
+          <small data-i18n="currentQuest">Quest aktif</small>
+          <strong id="active-task-name" data-i18n="noneSelected">Belum dipilih</strong>
         </div>
-      </details>
+      </div>
     </section>
 
-    <aside class="side-stack">
-      <section class="panel compact-panel">
-        <div class="section-heading">
-          <div>
-            <span class="section-kicker" data-i18n="soundscape">Soundscape</span>
-            <h2 data-i18n="ambientWorld">Ambient world</h2>
-          </div>
-          <button id="ambient-toggle" class="icon-button" onclick="toggleAmbient()" aria-label="Toggle ambient">
-            <i id="ambient-icon" data-lucide="volume-x"></i>
-          </button>
-        </div>
-
-        <label class="field">
-          <span data-i18n="chooseAmbient">Choose ambient</span>
-          <select id="ambient-select" onchange="setAmbientType(this.value)">
-            <option value="rain">🌧️ Castle Rain</option>
-            <option value="forest">🌲 Enchanted Forest</option>
-            <option value="fireplace">🔥 Tavern Fireplace</option>
-            <option value="ocean">🌊 Mystic Ocean</option>
-            <option value="wind">🍃 Mountain Wind</option>
-            <option value="night">🌙 Moonlit Night</option>
-            <option value="library">📚 Ancient Library</option>
-            <option value="white">◻️ White Noise</option>
-            <option value="pink">🌸 Pink Noise</option>
-            <option value="brown">🟤 Brown Noise</option>
-          </select>
-        </label>
-
-        <label class="volume-field">
-          <span><span data-i18n="volume">Volume</span> <strong id="volume-value">35%</strong></span>
-          <input id="volume-slider" type="range" min="0" max="100" value="35" oninput="setAmbientVolume(this.value)">
-        </label>
-      </section>
-
-      <section class="panel compact-panel">
-        <div class="section-heading">
-          <div>
-            <span class="section-kicker" data-i18n="dailyProgress">Daily progress</span>
-            <h2 data-i18n="microHabits">Micro habits</h2>
-          </div>
-          <span id="habit-progress" class="progress-chip">0/3</span>
-        </div>
-        <div id="habits-list" class="habit-list"></div>
-        <form class="inline-form" onsubmit="addHabit(event)">
-          <input id="habit-input" maxlength="60" data-i18n-placeholder="newHabitPlaceholder" placeholder="Add a tiny habit..." required>
-          <button class="icon-button" type="submit" aria-label="Add habit"><i data-lucide="plus"></i></button>
-        </form>
-      </section>
-    </aside>
-
-    <section class="panel tasks-panel">
-      <div class="section-heading tasks-heading">
+    <section class="panel tasks-panel" data-area="tasks">
+      <div class="panel-head">
         <div>
-          <span class="section-kicker" data-i18n="questBoard">Quest board</span>
-          <h2 data-i18n="todayTasks">Today's tasks</h2>
+          <span class="eyebrow"><i data-lucide="list-todo"></i><span data-i18n="questBoard">Quest board</span></span>
+          <h2 data-i18n="todayTasks">Tugas hari ini</h2>
         </div>
-        <button class="button surprise" onclick="addRandomTask()">
-          <i data-lucide="dices"></i>
-          <span data-i18n="surpriseMe">Surprise me</span>
+        <button class="random-button" onclick="addRandomTask()">
+          <i data-lucide="dices"></i><span data-i18n="randomQuest">Random</span>
         </button>
       </div>
 
-      <form class="task-form" onsubmit="addTask(event)">
-        <input id="task-input" maxlength="100" data-i18n-placeholder="taskPlaceholder" placeholder="What do you want to finish?" required>
+      <form class="task-composer" onsubmit="addTask(event)">
+        <div class="composer-input">
+          <i data-lucide="plus"></i>
+          <input id="task-input" maxlength="100" data-i18n-placeholder="taskPlaceholder" placeholder="Tambah sesuatu yang ingin diselesaikan..." required>
+        </div>
         <select id="task-tag" aria-label="Task category">
-          <option value="Study">📖 Study</option>
-          <option value="Code">💻 Code</option>
-          <option value="Life">✨ Life</option>
-          <option value="Creative">🎨 Creative</option>
-          <option value="Random">🎲 Random</option>
+          <option value="Study">Study</option>
+          <option value="Code">Code</option>
+          <option value="Life">Life</option>
+          <option value="Creative">Creative</option>
+          <option value="Random">Random</option>
         </select>
-        <button class="button primary" type="submit"><i data-lucide="plus"></i><span data-i18n="addQuest">Add quest</span></button>
+        <button type="submit" class="add-task-button" aria-label="Add task"><i data-lucide="arrow-up"></i></button>
       </form>
 
       <div id="task-list" class="task-list"></div>
       <div id="empty-tasks" class="empty-state">
-        <i data-lucide="scroll-text"></i>
-        <p data-i18n="emptyTasks">Your quest board is empty.</p>
-        <button class="text-button" onclick="addRandomTask()" data-i18n="tryRandom">Try a random task</button>
+        <span class="empty-icon"><i data-lucide="sparkles"></i></span>
+        <h3 data-i18n="emptyTitle">Belum ada quest</h3>
+        <p data-i18n="emptyTasks">Tambahkan sendiri atau biarkan FocusPulse memilihkan aktivitas random.</p>
+        <button onclick="addRandomTask()" data-i18n="giveRandom">Berikan random quest</button>
       </div>
+    </section>
+
+    <section class="panel ambient-panel" data-area="ambient">
+      <div class="ambient-visual" id="ambient-visual">
+        <span class="sound-wave wave-1"></span>
+        <span class="sound-wave wave-2"></span>
+        <span class="sound-wave wave-3"></span>
+        <i id="ambient-large-icon" data-lucide="cloud-rain"></i>
+      </div>
+      <div class="ambient-content">
+        <span class="eyebrow"><i data-lucide="headphones"></i><span data-i18n="soundscape">Soundscape</span></span>
+        <h2 id="current-ambient-name">Castle Rain</h2>
+        <p id="current-ambient-description">Soft rain beyond old stone windows.</p>
+        <div class="ambient-controls">
+          <button id="ambient-toggle" class="ambient-play" onclick="toggleAmbient()" aria-label="Play ambient"><i id="ambient-icon" data-lucide="play"></i></button>
+          <label class="mini-volume">
+            <i data-lucide="volume-1"></i>
+            <input id="volume-slider" type="range" min="0" max="100" value="35" oninput="setAmbientVolume(this.value)">
+            <strong id="volume-value">35%</strong>
+          </label>
+          <button class="browse-sounds" onclick="openDesignStudio('ambient')"><span data-i18n="browse">Browse</span><i data-lucide="grid-2x2"></i></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel habits-panel" data-area="habits">
+      <div class="panel-head">
+        <div>
+          <span class="eyebrow"><i data-lucide="repeat-2"></i><span data-i18n="dailyLoop">Daily loop</span></span>
+          <h2 data-i18n="microHabits">Micro habits</h2>
+        </div>
+        <span id="habit-progress" class="count-badge">0/3</span>
+      </div>
+      <div id="habits-list" class="habit-list"></div>
+      <form class="habit-composer" onsubmit="addHabit(event)">
+        <input id="habit-input" maxlength="60" data-i18n-placeholder="newHabitPlaceholder" placeholder="Tambah kebiasaan kecil..." required>
+        <button type="submit" aria-label="Add habit"><i data-lucide="plus"></i></button>
+      </form>
+    </section>
+
+    <section class="panel pulse-panel" data-area="pulse">
+      <div class="pulse-copy">
+        <span class="eyebrow"><i data-lucide="activity"></i><span data-i18n="todayPulse">Today pulse</span></span>
+        <h2><span id="completed-task-count">0</span><small data-i18n="tasksDone">task selesai</small></h2>
+      </div>
+      <div class="pulse-chart" aria-hidden="true">
+        <span style="--h:35%"></span><span style="--h:52%"></span><span style="--h:42%"></span>
+        <span style="--h:75%"></span><span style="--h:60%"></span><span style="--h:88%"></span><span class="today-bar" id="today-pulse-bar" style="--h:18%"></span>
+      </div>
+      <div class="focus-minutes"><strong id="focus-minutes">0</strong><span data-i18n="focusMinutes">menit fokus</span></div>
     </section>
   </main>
 
   <footer>
-    <span>FocusPulse</span> <span aria-hidden="true">✦</span>
-    <span data-i18n="footerText">Small actions, legendary consistency.</span>
+    <span class="footer-mark">FP</span>
+    <span data-i18n="footerText">Build momentum, one focused block at a time.</span>
+    <button onclick="openDesignStudio('themes')" data-i18n="customize">Customize</button>
   </footer>
 
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="studio-modal" class="studio-modal" aria-hidden="true">
+    <button class="studio-backdrop" onclick="closeDesignStudio()" aria-label="Close design studio"></button>
+    <section class="studio-sheet" role="dialog" aria-modal="true" aria-labelledby="studio-title">
+      <header class="studio-head">
+        <div>
+          <span class="eyebrow"><i data-lucide="wand-sparkles"></i><span data-i18n="personalize">Personalize</span></span>
+          <h2 id="studio-title" data-i18n="designStudio">Focus Design Studio</h2>
+          <p data-i18n="studioDesc">Pilih pengalaman yang terasa paling pas untuk cara kamu fokus.</p>
+        </div>
+        <button class="studio-close" onclick="closeDesignStudio()" aria-label="Close"><i data-lucide="x"></i></button>
+      </header>
 
+      <nav class="studio-tabs" aria-label="Studio sections">
+        <button id="studio-tab-themes" onclick="switchStudioTab('themes')"><i data-lucide="layout-dashboard"></i><span data-i18n="layouts">Layouts</span></button>
+        <button id="studio-tab-ambient" onclick="switchStudioTab('ambient')"><i data-lucide="audio-lines"></i><span data-i18n="ambient">Ambient</span></button>
+        <button id="studio-tab-timer" onclick="switchStudioTab('timer')"><i data-lucide="timer"></i><span data-i18n="timerPresets">Timer</span></button>
+      </nav>
+
+      <div class="studio-scroll">
+        <section id="studio-panel-themes" class="studio-panel">
+          <div class="studio-section-title">
+            <div><h3 data-i18n="chooseLayout">Choose your visual language</h3><p data-i18n="layoutHint">Setiap pilihan mengubah layout, tipografi, bentuk panel, warna, dan motion.</p></div>
+          </div>
+          <div id="theme-card-grid" class="theme-card-grid"></div>
+        </section>
+
+        <section id="studio-panel-ambient" class="studio-panel" hidden>
+          <div class="studio-section-title">
+            <div><h3 data-i18n="chooseSound">Build your soundscape</h3><p id="ambient-recommendation" data-i18n="soundHint">Pilihan bertanda bintang cocok dengan layout aktif.</p></div>
+            <div class="studio-volume">
+              <i data-lucide="volume-2"></i>
+              <input id="studio-volume-slider" type="range" min="0" max="100" value="35" oninput="setAmbientVolume(this.value)">
+              <strong id="studio-volume-value">35%</strong>
+            </div>
+          </div>
+          <div class="ambient-filter" id="ambient-filter">
+            <button class="active" onclick="filterAmbient('all', this)" data-i18n="all">All</button>
+            <button onclick="filterAmbient('nature', this)" data-i18n="nature">Nature</button>
+            <button onclick="filterAmbient('places', this)" data-i18n="places">Places</button>
+            <button onclick="filterAmbient('noise', this)" data-i18n="noise">Noise</button>
+          </div>
+          <div id="ambient-card-grid" class="ambient-card-grid"></div>
+        </section>
+
+        <section id="studio-panel-timer" class="studio-panel" hidden>
+          <div class="studio-section-title">
+            <div><h3 data-i18n="chooseRhythm">Choose your focus rhythm</h3><p data-i18n="timerHint">Mulai cepat, bekerja dalam, atau buat ritmemu sendiri.</p></div>
+          </div>
+          <div id="preset-card-grid" class="preset-card-grid"></div>
+          <div class="custom-timer-card">
+            <div><span class="eyebrow"><i data-lucide="settings-2"></i><span data-i18n="custom">Custom</span></span><h3 data-i18n="customRhythm">Your own rhythm</h3></div>
+            <div class="custom-duration-grid">
+              <label><span data-i18n="focus">Fokus</span><input id="duration-focus" type="number" min="1" max="180" value="25"><small>min</small></label>
+              <label><span data-i18n="shortBreak">Pendek</span><input id="duration-short" type="number" min="1" max="60" value="5"><small>min</small></label>
+              <label><span data-i18n="longBreak">Panjang</span><input id="duration-long" type="number" min="1" max="90" value="15"><small>min</small></label>
+            </div>
+            <button onclick="saveCustomDurations()" data-i18n="applyCustom">Apply custom rhythm</button>
+          </div>
+        </section>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="./src/js/i18n.js"></script>
   <script src="./src/js/theme.js"></script>
   <script src="./src/js/app.js"></script>

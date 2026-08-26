@@ -1,11 +1,35 @@
 const STORAGE_KEY = 'focuspulse_v2_state';
 const PRESETS = {
-  quick: { focus: 15, short: 3, long: 8 },
-  classic: { focus: 25, short: 5, long: 15 },
-  deep: { focus: 40, short: 8, long: 20 },
-  flow: { focus: 50, short: 10, long: 25 },
-  epic: { focus: 90, short: 20, long: 30 }
+  micro: { name:'Micro Reset', description:'A tiny reset when starting feels difficult.', focus:10, short:2, long:5 },
+  quick: { name:'Quick Sprint', description:'Fast momentum for small tasks.', focus:15, short:3, long:8 },
+  classic: { name:'Classic Pomodoro', description:'The balanced default for everyday focus.', focus:25, short:5, long:15 },
+  deep: { name:'Deep Work', description:'Longer blocks for coding and studying.', focus:40, short:8, long:20 },
+  flow: { name:'Flow State', description:'Stay immersed with fewer interruptions.', focus:50, short:10, long:25 },
+  ultradian: { name:'52 / 17', description:'A research-inspired work and recovery rhythm.', focus:52, short:17, long:25 },
+  maker: { name:'Maker Mode', description:'A long runway for difficult creative work.', focus:75, short:15, long:25 },
+  epic: { name:'Epic Quest', description:'Maximum deep-focus expedition.', focus:90, short:20, long:30 }
 };
+
+const AMBIENTS = [
+  { id:'rain', name:'Castle Rain', icon:'cloud-rain', category:'nature', color:'#70b9ff', description:{id:'Hujan lembut di balik jendela batu tua.',en:'Soft rain beyond old stone windows.'} },
+  { id:'thunder', name:'Distant Thunder', icon:'cloud-lightning', category:'nature', color:'#8d91ff', description:{id:'Gemuruh rendah dari badai yang jauh.',en:'Low rumbles from a faraway storm.'} },
+  { id:'forest', name:'Enchanted Forest', icon:'trees', category:'nature', color:'#69d39a', description:{id:'Angin dan dedaunan di hutan yang tenang.',en:'Wind and leaves in a quiet forest.'} },
+  { id:'ocean', name:'Mystic Ocean', icon:'waves', category:'nature', color:'#50d1e8', description:{id:'Ombak panjang dengan ritme yang menenangkan.',en:'Long waves with a calming rhythm.'} },
+  { id:'river', name:'Crystal River', icon:'waves-arrow-up', category:'nature', color:'#67d9ff', description:{id:'Aliran air jernih yang terus bergerak.',en:'A clear stream in constant motion.'} },
+  { id:'wind', name:'Mountain Wind', icon:'wind', category:'nature', color:'#b6d8e8', description:{id:'Hembusan udara tipis di puncak tinggi.',en:'Thin air moving across a high summit.'} },
+  { id:'night', name:'Moonlit Night', icon:'moon-star', category:'nature', color:'#9ca8ff', description:{id:'Suasana malam sunyi dan luas.',en:'A quiet and spacious night atmosphere.'} },
+  { id:'fireplace', name:'Tavern Fireplace', icon:'flame-kindling', category:'places', color:'#ff9b57', description:{id:'Api hangat dengan letupan kayu kecil.',en:'Warm fire with gentle wooden crackles.'} },
+  { id:'library', name:'Ancient Library', icon:'library-big', category:'places', color:'#d7b47b', description:{id:'Ruangan sunyi, halaman buku, dan udara lembut.',en:'A hushed room of pages and soft air.'} },
+  { id:'cafe', name:'Quiet Café', icon:'coffee', category:'places', color:'#e4a873', description:{id:'Dengung kafe yang halus tanpa distraksi.',en:'A soft café hum without the distraction.'} },
+  { id:'tavern', name:'Fantasy Tavern', icon:'beer', category:'places', color:'#f5bd62', description:{id:'Keramaian hangat yang terasa jauh.',en:'Warm distant bustle in a cozy hall.'} },
+  { id:'clockwork', name:'Clockwork Room', icon:'settings', category:'places', color:'#f2d05f', description:{id:'Mesin kecil dan ritme mekanis yang stabil.',en:'Tiny machinery and a steady mechanical rhythm.'} },
+  { id:'train', name:'Night Train', icon:'train-front', category:'places', color:'#c19375', description:{id:'Getaran gerbong dalam perjalanan malam.',en:'Carriage vibration through a night journey.'} },
+  { id:'fan', name:'Soft Fan', icon:'fan', category:'noise', color:'#a8d4df', description:{id:'Dengung stabil untuk menutup suara sekitar.',en:'A steady hum that masks the room.'} },
+  { id:'white', name:'White Noise', icon:'audio-waveform', category:'noise', color:'#e8edf2', description:{id:'Spektrum penuh untuk menutupi distraksi.',en:'Full-spectrum sound to mask distractions.'} },
+  { id:'pink', name:'Pink Noise', icon:'audio-lines', category:'noise', color:'#ff9fcb', description:{id:'Noise seimbang yang terasa lebih lembut.',en:'Balanced noise with a softer texture.'} },
+  { id:'brown', name:'Brown Noise', icon:'activity', category:'noise', color:'#c18b6a', description:{id:'Nada rendah dan dalam untuk fokus tenang.',en:'Deep low tones for grounded focus.'} },
+  { id:'space', name:'Deep Space', icon:'orbit', category:'noise', color:'#8b7cff', description:{id:'Dengung luas seperti kabin antariksa.',en:'A wide hum like a distant space cabin.'} }
+];
 
 const RANDOM_TASKS = {
   id: [
@@ -45,6 +69,8 @@ const defaultState = {
     timeLeft: 25 * 60,
     isRunning: false,
     sessions: 0,
+    totalFocusSeconds: 0,
+    statsDate: localDateKey(),
     intervalId: null
   },
   tasks: [],
@@ -64,6 +90,7 @@ let state = clone(defaultState);
 let audioContext = null;
 let ambientNodes = [];
 let toastTimer = null;
+let ambientFilterValue = 'all';
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -111,6 +138,8 @@ function loadState() {
         if (duration >= 1 && duration <= 180) state.timer.durations[mode] = duration;
       });
       state.timer.sessions = Math.max(0, Number(saved.timer.sessions) || 0);
+      state.timer.totalFocusSeconds = Math.max(0, Number(saved.timer.totalFocusSeconds) || 0);
+      state.timer.statsDate = typeof saved.timer.statsDate === 'string' ? saved.timer.statsDate : localDateKey();
     }
 
     if (Array.isArray(saved.tasks)) {
@@ -147,6 +176,11 @@ function loadState() {
     console.warn('Could not load saved FocusPulse data.', error);
   }
 
+  if (state.timer.statsDate !== localDateKey()) {
+    state.timer.totalFocusSeconds = 0;
+    state.timer.statsDate = localDateKey();
+  }
+
   if (state.habitDate !== localDateKey()) {
     state.habits.forEach(function (habit) { habit.completed = false; });
     state.habitDate = localDateKey();
@@ -165,7 +199,7 @@ function loadState() {
 function saveState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      timer: { durations: state.timer.durations, sessions: state.timer.sessions },
+      timer: { durations: state.timer.durations, sessions: state.timer.sessions, totalFocusSeconds: state.timer.totalFocusSeconds, statsDate: state.timer.statsDate },
       tasks: state.tasks,
       habits: state.habits,
       activeTaskId: state.activeTaskId,
@@ -211,6 +245,11 @@ function startTimer() {
   state.timer.isRunning = true;
   state.timer.intervalId = window.setInterval(function () {
     state.timer.timeLeft = Math.max(0, state.timer.timeLeft - 1);
+    if (state.timer.mode === 'focus') {
+      state.timer.totalFocusSeconds += 1;
+      if (state.timer.totalFocusSeconds % 15 === 0) saveState();
+      updatePulseUI();
+    }
     updateTimerUI();
     if (state.timer.timeLeft === 0) completeTimer();
   }, 1000);
@@ -266,7 +305,7 @@ function updateTimerUI(forcedStatus) {
   const status = document.getElementById('timer-status');
 
   if (displayElement) displayElement.textContent = display;
-  if (ring) ring.style.strokeDashoffset = String(729 - 729 * progress);
+  if (ring) ring.style.strokeDashoffset = String(829.4 - 829.4 * progress);
   if (label) label.textContent = state.timer.isRunning ? t('pause') : t('start');
   if (icon) icon.setAttribute('data-lucide', state.timer.isRunning ? 'pause' : 'play');
 
@@ -281,20 +320,29 @@ function updateTimerUI(forcedStatus) {
     if (tab) tab.classList.toggle('active', state.timer.mode === mode);
   });
 
-  const counter = document.getElementById('session-counter');
-  if (counter) counter.textContent = state.timer.sessions + ' ' + t('sessions');
+  const counter = document.getElementById('header-session-count');
+  if (counter) counter.textContent = String(state.timer.sessions);
   document.title = display + ' — FocusPulse';
   refreshIcons();
 }
 
+function currentPresetName() {
+  return Object.keys(PRESETS).find(function(key) {
+    const preset = PRESETS[key];
+    return preset.focus === state.timer.durations.focus &&
+      preset.short === state.timer.durations.short &&
+      preset.long === state.timer.durations.long;
+  }) || 'custom';
+}
+
 function applyPreset(name) {
-  if (name === 'custom') return;
   const preset = PRESETS[name];
   if (!preset) return;
-  state.timer.durations = clone(preset);
+  state.timer.durations = { focus:preset.focus, short:preset.short, long:preset.long };
   syncDurationInputs();
   setTimerMode(state.timer.mode);
   saveState();
+  renderPresetPicker();
 }
 
 function saveCustomDurations() {
@@ -302,8 +350,6 @@ function saveCustomDurations() {
   const shortBreak = clampDuration(document.getElementById('duration-short').value, 5, 60);
   const longBreak = clampDuration(document.getElementById('duration-long').value, 15, 90);
   state.timer.durations = { focus: focus, short: shortBreak, long: longBreak };
-  const preset = document.getElementById('preset-select');
-  if (preset) preset.value = 'custom';
   setTimerMode(state.timer.mode);
   saveState();
   showToast(t('durationsSaved'));
@@ -318,10 +364,24 @@ function syncDurationInputs() {
   document.getElementById('duration-focus').value = state.timer.durations.focus;
   document.getElementById('duration-short').value = state.timer.durations.short;
   document.getElementById('duration-long').value = state.timer.durations.long;
-  const presetName = Object.keys(PRESETS).find(function (key) {
-    return JSON.stringify(PRESETS[key]) === JSON.stringify(state.timer.durations);
+}
+
+function renderPresetPicker() {
+  const grid = document.getElementById('preset-card-grid');
+  if (!grid) return;
+  const selected = currentPresetName();
+  grid.innerHTML = '';
+  Object.keys(PRESETS).forEach(function(key) {
+    const preset = PRESETS[key];
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'preset-card' + (selected === key ? ' selected' : '');
+    button.onclick = function() { applyPreset(key); };
+    button.innerHTML =
+      '<header><span>' + preset.focus + ' / ' + preset.short + '</span><i class="preset-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 4 4L19 6"/></svg></i></header>' +
+      '<strong>' + preset.name + '</strong><small>' + preset.description + ' · ' + preset.long + ' min long break</small>';
+    grid.appendChild(button);
   });
-  document.getElementById('preset-select').value = presetName || 'custom';
 }
 
 function addTask(event) {
@@ -392,6 +452,7 @@ function renderTasks() {
   const active = state.tasks.find(function (task) { return task.id === state.activeTaskId; });
   const activeName = document.getElementById('active-task-name');
   if (activeName) activeName.textContent = active ? active.text : t('noneSelected');
+  updatePulseUI();
   refreshIcons();
 }
 
@@ -442,6 +503,10 @@ function renderHabits() {
   refreshIcons();
 }
 
+function getAmbient(type) {
+  return AMBIENTS.find(function(item) { return item.id === type; }) || AMBIENTS[0];
+}
+
 function toggleAmbient() {
   state.ambient.playing = !state.ambient.playing;
   if (state.ambient.playing) {
@@ -454,14 +519,26 @@ function toggleAmbient() {
   updateAmbientUI();
 }
 
-function setAmbientType(type) {
-  state.ambient.type = type;
+function setAmbientType(type, autoplay) {
+  const ambient = getAmbient(type);
+  state.ambient.type = ambient.id;
+  if (autoplay === true) state.ambient.playing = true;
   saveState();
   if (state.ambient.playing) {
     stopAmbient();
     startAmbient();
   }
   updateAmbientUI();
+  renderAmbientPicker();
+}
+
+function selectAmbientFromStudio(type) {
+  setAmbientType(type, true);
+}
+
+function applyThemeAmbient(theme) {
+  if (!theme || !theme.defaultAmbient) return;
+  setAmbientType(theme.defaultAmbient, state.ambient.playing);
 }
 
 function setAmbientVolume(value) {
@@ -473,6 +550,40 @@ function setAmbientVolume(value) {
   updateAmbientUI();
 }
 
+function filterAmbient(category, clickedButton) {
+  ambientFilterValue = category;
+  document.querySelectorAll('#ambient-filter button').forEach(function(button) {
+    button.classList.toggle('active', button === clickedButton);
+  });
+  document.querySelectorAll('.ambient-card').forEach(function(card) {
+    card.hidden = category !== 'all' && card.dataset.category !== category;
+  });
+}
+
+function renderAmbientPicker() {
+  const grid = document.getElementById('ambient-card-grid');
+  if (!grid) return;
+  const theme = typeof getCurrentTheme === 'function' ? getCurrentTheme() : { recommended:[] };
+  grid.innerHTML = '';
+  AMBIENTS.forEach(function(ambient) {
+    const recommended = theme.recommended.indexOf(ambient.id) !== -1;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.category = ambient.category;
+    button.hidden = ambientFilterValue !== 'all' && ambient.category !== ambientFilterValue;
+    button.className = 'ambient-card' + (state.ambient.type === ambient.id ? ' selected' : '');
+    button.style.setProperty('--sound-color', ambient.color);
+    button.onclick = function() { selectAmbientFromStudio(ambient.id); };
+    button.innerHTML =
+      '<span class="ambient-card-icon"><i data-lucide="' + ambient.icon + '"></i></span>' +
+      '<strong>' + ambient.name + '</strong>' +
+      (recommended ? '<span class="recommended-star" title="' + t('recommended') + '"><i data-lucide="star"></i></span>' : '<span></span>') +
+      '<small>' + ambient.description[currentLang] + '</small>';
+    grid.appendChild(button);
+  });
+  refreshIcons();
+}
+
 function ensureAudioContext() {
   if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
   if (audioContext.state === 'suspended') audioContext.resume();
@@ -480,23 +591,27 @@ function ensureAudioContext() {
 }
 
 function createNoiseBuffer(context, type) {
-  const length = context.sampleRate * 4;
+  const length = context.sampleRate * 5;
   const buffer = context.createBuffer(1, length, context.sampleRate);
   const data = buffer.getChannelData(0);
   let last = 0;
-
+  let slow = 0;
   for (let index = 0; index < length; index += 1) {
     const white = Math.random() * 2 - 1;
-    if (type === 'brown' || type === 'fireplace') {
-      last = (last + 0.02 * white) / 1.02;
-      data[index] = last * 3.5;
-    } else if (type === 'pink' || type === 'rain' || type === 'forest' || type === 'library' || type === 'night') {
-      last = 0.985 * last + 0.15 * white;
-      data[index] = last * 0.35;
+    if (['brown','fireplace','train','thunder','space'].indexOf(type) !== -1) {
+      last = (last + 0.018 * white) / 1.018;
+      data[index] = last * 3.2;
+    } else if (['pink','rain','forest','library','night','cafe','tavern'].indexOf(type) !== -1) {
+      last = 0.984 * last + 0.14 * white;
+      data[index] = last * 0.34;
+    } else if (type === 'river' || type === 'ocean' || type === 'wind') {
+      slow = 0.996 * slow + 0.05 * white;
+      data[index] = slow * 0.28 + white * 0.08;
     } else {
-      data[index] = white * 0.55;
+      data[index] = white * 0.5;
     }
-    if (type === 'fireplace' && Math.random() < 0.0008) data[index] += (Math.random() * 2 - 1) * 1.7;
+    if (type === 'fireplace' && Math.random() < 0.00075) data[index] += (Math.random() * 2 - 1) * 1.8;
+    if (type === 'clockwork' && index % Math.floor(context.sampleRate * 0.55) < 90) data[index] += 0.65 * Math.sin(index * 0.18);
   }
   return buffer;
 }
@@ -510,11 +625,13 @@ function startAmbient() {
     const filter = context.createBiquadFilter();
     const source = context.createBufferSource();
     const settings = {
-      rain: ['lowpass', 1800, 0.5], forest: ['bandpass', 900, 0.7], fireplace: ['lowpass', 700, 0.6],
-      ocean: ['lowpass', 500, 0.8], wind: ['bandpass', 650, 1.1], night: ['lowpass', 1100, 0.5],
-      library: ['lowpass', 420, 0.7], white: ['allpass', 1000, 0], pink: ['lowpass', 2400, 0.4],
-      brown: ['lowpass', 500, 0.5]
-    }[type] || ['lowpass', 1200, 0.5];
+      rain:['lowpass',1900,.5], thunder:['lowpass',220,.8], forest:['bandpass',1050,.7],
+      ocean:['lowpass',480,.8], river:['bandpass',1200,.45], wind:['bandpass',690,1.1],
+      night:['lowpass',900,.5], fireplace:['lowpass',720,.6], library:['lowpass',390,.7],
+      cafe:['bandpass',620,.5], tavern:['bandpass',520,.6], clockwork:['bandpass',1450,1.5],
+      train:['lowpass',430,.8], fan:['bandpass',720,1.2], white:['allpass',1000,0],
+      pink:['lowpass',2300,.4], brown:['lowpass',470,.5], space:['lowpass',320,.9]
+    }[type] || ['lowpass',1200,.5];
 
     source.buffer = createNoiseBuffer(context, type);
     source.loop = true;
@@ -522,7 +639,6 @@ function startAmbient() {
     filter.frequency.value = settings[1];
     filter.Q.value = settings[2];
     master.gain.value = state.ambient.volume / 250;
-
     source.connect(filter);
     filter.connect(master);
     master.connect(context.destination);
@@ -531,15 +647,27 @@ function startAmbient() {
     ambientNodes = [source, filter, master];
     ambientNodes.master = master;
 
-    if (type === 'ocean' || type === 'wind') {
+    if (['ocean','river','wind','train','thunder'].indexOf(type) !== -1) {
       const lfo = context.createOscillator();
       const depth = context.createGain();
-      lfo.frequency.value = type === 'ocean' ? 0.09 : 0.17;
-      depth.gain.value = state.ambient.volume / 600;
+      lfo.frequency.value = type === 'thunder' ? 0.035 : type === 'train' ? 1.8 : type === 'river' ? 0.22 : 0.1;
+      depth.gain.value = state.ambient.volume / (type === 'thunder' ? 850 : 650);
       lfo.connect(depth);
       depth.connect(master.gain);
       lfo.start();
       ambientNodes.push(lfo, depth);
+    }
+
+    if (type === 'space' || type === 'clockwork') {
+      const hum = context.createOscillator();
+      const humGain = context.createGain();
+      hum.type = type === 'space' ? 'sine' : 'triangle';
+      hum.frequency.value = type === 'space' ? 58 : 110;
+      humGain.gain.value = state.ambient.volume / 1800;
+      hum.connect(humGain);
+      humGain.connect(master);
+      hum.start();
+      ambientNodes.push(hum, humGain);
     }
   } catch (error) {
     state.ambient.playing = false;
@@ -548,7 +676,7 @@ function startAmbient() {
 }
 
 function stopAmbient() {
-  ambientNodes.forEach(function (node) {
+  ambientNodes.forEach(function(node) {
     try {
       if (typeof node.stop === 'function') node.stop();
       if (typeof node.disconnect === 'function') node.disconnect();
@@ -558,17 +686,29 @@ function stopAmbient() {
 }
 
 function updateAmbientUI() {
-  const selector = document.getElementById('ambient-select');
-  const slider = document.getElementById('volume-slider');
-  const value = document.getElementById('volume-value');
+  const ambient = getAmbient(state.ambient.type);
+  const mainSlider = document.getElementById('volume-slider');
+  const studioSlider = document.getElementById('studio-volume-slider');
+  const mainValue = document.getElementById('volume-value');
+  const studioValue = document.getElementById('studio-volume-value');
   const icon = document.getElementById('ambient-icon');
-  const toggle = document.getElementById('ambient-toggle');
+  const largeIcon = document.getElementById('ambient-large-icon');
+  const name = document.getElementById('current-ambient-name');
+  const description = document.getElementById('current-ambient-description');
+  const panel = document.querySelector('.ambient-panel');
+  const visual = document.getElementById('ambient-visual');
 
-  if (selector) selector.value = state.ambient.type;
-  if (slider) slider.value = String(state.ambient.volume);
-  if (value) value.textContent = state.ambient.volume + '%';
-  if (icon) icon.setAttribute('data-lucide', state.ambient.playing ? 'volume-2' : 'volume-x');
-  if (toggle) toggle.classList.toggle('active', state.ambient.playing);
+  if (mainSlider) mainSlider.value = String(state.ambient.volume);
+  if (studioSlider) studioSlider.value = String(state.ambient.volume);
+  if (mainValue) mainValue.textContent = state.ambient.volume + '%';
+  if (studioValue) studioValue.textContent = state.ambient.volume + '%';
+  if (icon) icon.setAttribute('data-lucide', state.ambient.playing ? 'pause' : 'play');
+  if (largeIcon) largeIcon.setAttribute('data-lucide', ambient.icon);
+  if (name) name.textContent = ambient.name;
+  if (description) description.textContent = ambient.description[currentLang];
+  if (panel) panel.classList.toggle('playing', state.ambient.playing);
+  if (visual) visual.style.setProperty('--ambient-color', ambient.color);
+  renderAmbientPicker();
   refreshIcons();
 }
 
@@ -601,19 +741,32 @@ function showToast(message) {
   toastTimer = window.setTimeout(function () { toast.classList.remove('show'); }, 2200);
 }
 
+function updatePulseUI() {
+  const completedTasks = state.tasks.filter(function(task) { return task.completed; }).length;
+  const taskCount = document.getElementById('completed-task-count');
+  const focusMinutes = document.getElementById('focus-minutes');
+  const pulseBar = document.getElementById('today-pulse-bar');
+  if (taskCount) taskCount.textContent = String(completedTasks);
+  if (focusMinutes) focusMinutes.textContent = String(Math.floor(state.timer.totalFocusSeconds / 60));
+  if (pulseBar) {
+    const score = Math.min(100, 18 + completedTasks * 13 + state.timer.sessions * 18);
+    pulseBar.style.setProperty('--h', score + '%');
+  }
+}
+
 function updateAllUI() {
   updateStreak();
   updateTimerUI();
   updateAmbientUI();
   renderTasks();
   renderHabits();
+  renderPresetPicker();
+  updatePulseUI();
 }
 
 window.addEventListener('DOMContentLoaded', function () {
   loadState();
   syncDurationInputs();
-  document.getElementById('ambient-select').value = state.ambient.type;
-  document.getElementById('volume-slider').value = String(state.ambient.volume);
   window.focusPulseReady = true;
   updateAllUI();
 });
