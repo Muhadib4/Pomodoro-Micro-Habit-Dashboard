@@ -14,7 +14,7 @@ let state = {
     { id: 1, text: 'Design frontend architecture & Linear UI components', completed: true, active: false, tag: 'Design' },
     { id: 2, text: 'Implement Pomodoro countdown & audio synthesizer', completed: false, active: true, tag: 'Dev' },
     { id: 3, text: 'Build Micro-Habits tracker with streak persistence', completed: false, active: false, tag: 'Habit' },
-    { id: 4, text: 'Add Discord webhook logger, i18n, & theme switcher', completed: false, active: false, tag: 'System' }
+    { id: 4, text: 'Polish localization & theme switcher', completed: false, active: false, tag: 'System' }
   ],
   habits: [
     { id: 1, name: 'Drink 500ml Water', icon: 'droplet', completedToday: true, streak: 14, category: 'Health' },
@@ -36,13 +36,31 @@ let audioCtx = null;
 let ambientNode = null;
 let ambientGainNode = null;
 
+function refreshIcons() {
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    window.lucide.createIcons();
+  }
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  })[char]);
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   loadFromLocalStorage();
-  lucide.createIcons();
+  refreshIcons();
   renderTasks();
   renderHabits();
   renderHeatmap();
   updateTimerDisplay();
+  updateStatsDisplay();
+  window.focusPulseReady = true;
 });
 
 function saveToLocalStorage() {
@@ -106,7 +124,7 @@ function startTimer() {
   if (labelEl) labelEl.innerText = translations[currentLang].pause;
   if (iconEl) iconEl.setAttribute('data-lucide', 'pause');
   if (statusEl) statusEl.innerText = state.timer.mode === 'pomodoro' ? translations[currentLang].activeSession : translations[currentLang].breakProgress;
-  lucide.createIcons();
+  refreshIcons();
 
   state.timer.timerId = setInterval(() => {
     if (state.timer.timeLeft > 0) {
@@ -123,9 +141,10 @@ function startTimer() {
       if (state.timer.mode === 'pomodoro') {
         state.timer.completedPomodoros++;
         saveToLocalStorage();
+        updateStatsDisplay();
       }
       
-      alert(`Session completed!`);
+      alert(currentLang === 'id' ? 'Sesi selesai!' : 'Session completed!');
       resetTimer();
     }
   }, 1000);
@@ -141,7 +160,7 @@ function pauseTimer() {
   if (labelEl) labelEl.innerText = translations[currentLang].startFocus;
   if (iconEl) iconEl.setAttribute('data-lucide', 'play');
   if (statusEl) statusEl.innerText = translations[currentLang].paused;
-  lucide.createIcons();
+  refreshIcons();
 }
 
 function resetTimer() {
@@ -165,7 +184,7 @@ function updateTimerDisplay() {
   
   const displayEl = document.getElementById('timer-display');
   if (displayEl) displayEl.innerText = displayStr;
-  document.title = `${displayStr} &mdash; FocusPulse`;
+  document.title = `${displayStr} — FocusPulse`;
 
   const ring = document.getElementById('timer-progress-ring');
   if (ring) {
@@ -274,8 +293,8 @@ function renderTasks() {
       <div class="flex items-center space-x-3 flex-1">
         <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id})" class="w-4 h-4 rounded border-[rgba(255,255,255,0.2)] bg-transparent text-[#5e6ad2] focus:ring-0 cursor-pointer">
         <div>
-          <span class="text-xs ${task.completed ? 'line-through text-[#8a8f98]' : ''} block">${task.text}</span>
-          <span class="text-[10px] text-[#7170ff] bg-[#5e6ad2]/15 px-1.5 py-0.5 rounded font-mono">${task.tag || 'General'}</span>
+          <span class="text-xs ${task.completed ? 'line-through text-[#8a8f98]' : ''} block">${escapeHtml(task.text)}</span>
+          <span class="text-[10px] text-[#7170ff] bg-[#5e6ad2]/15 px-1.5 py-0.5 rounded font-mono">${escapeHtml(task.tag || 'General')}</span>
         </div>
       </div>
       <div class="flex items-center space-x-2">
@@ -297,7 +316,7 @@ function renderTasks() {
   const activeTaskName = document.getElementById('active-task-name');
   if (activeTaskName) activeTaskName.innerText = activeTask ? activeTask.text : translations[currentLang].noneSelected;
   
-  lucide.createIcons();
+  refreshIcons();
   saveToLocalStorage();
 }
 
@@ -352,10 +371,10 @@ function renderHabits() {
           <i data-lucide="${habit.icon}" class="w-4 h-4"></i>
         </div>
         <div>
-          <span class="text-xs font-medium block">${habit.name}</span>
+          <span class="text-xs font-medium block">${escapeHtml(habit.name)}</span>
           <div class="flex items-center space-x-2 mt-0.5">
             <span class="text-[10px] text-[#8a8f98] font-mono">Streak: ${habit.streak} days 🔥</span>
-            <span class="text-[10px] text-[#5e6ad2] bg-[#5e6ad2]/15 px-1.5 py-0.2 rounded">${habit.category}</span>
+            <span class="text-[10px] text-[#5e6ad2] bg-[#5e6ad2]/15 px-1.5 py-0.2 rounded">${escapeHtml(habit.category)}</span>
           </div>
         </div>
       </div>
@@ -371,7 +390,7 @@ function renderHabits() {
     `;
     list.appendChild(div);
   });
-  lucide.createIcons();
+  refreshIcons();
   saveToLocalStorage();
 }
 
@@ -379,9 +398,10 @@ function toggleHabit(id) {
   const habit = state.habits.find(h => h.id === id);
   if (habit) {
     habit.completedToday = !habit.completedToday;
-    habit.streak += habit.completedToday ? 1 : -1;
+    habit.streak = Math.max(0, habit.streak + (habit.completedToday ? 1 : -1));
     renderHabits();
     renderHeatmap();
+    updateStatsDisplay();
   }
 }
 
@@ -442,7 +462,30 @@ function renderHeatmap() {
 // ==================== ANALYTICS & MODALS ====================
 function openStatsModal() {
   const modal = document.getElementById('analytics-modal');
-  if (modal) modal.classList.remove('hidden');
+  if (modal) {
+    updateStatsDisplay();
+    modal.classList.remove('hidden');
+  }
+}
+
+function updateStatsDisplay() {
+  const totalPomodorosEl = document.getElementById('stat-total-pomodoros');
+  const focusHoursEl = document.getElementById('stat-focus-hours');
+  const habitRateEl = document.getElementById('stat-habit-rate');
+  const sessionsCountEl = document.getElementById('pomodoro-sessions-count');
+
+  if (totalPomodorosEl) totalPomodorosEl.textContent = String(state.timer.completedPomodoros);
+  if (focusHoursEl) focusHoursEl.textContent = `${(state.timer.totalFocusMinutes / 60).toFixed(1)}h`;
+
+  const completedHabits = state.habits.filter(habit => habit.completedToday).length;
+  const habitRate = state.habits.length
+    ? Math.round((completedHabits / state.habits.length) * 100)
+    : 0;
+  if (habitRateEl) habitRateEl.textContent = `${habitRate}%`;
+  if (sessionsCountEl) {
+    sessionsCountEl.textContent =
+      `${translations[currentLang].completedToday} ${state.timer.completedPomodoros}`;
+  }
 }
 function closeStatsModal() {
   const modal = document.getElementById('analytics-modal');

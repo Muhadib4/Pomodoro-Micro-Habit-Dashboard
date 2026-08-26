@@ -29,7 +29,7 @@ const translations = {
     more: "More",
     focusInsight: "Focus Insight & AI Coach",
     defaultInsight: "You are most productive during morning Pomodoro sessions. Keep up the momentum!",
-    footer: "FocusPulse &mdash; Pomodoro & Micro-Habit Dashboard &bull; Advanced Edition",
+    footer: "FocusPulse — Pomodoro & Micro-Habit Dashboard • Advanced Edition",
     ambient: "Ambient:"
   },
   id: {
@@ -62,7 +62,7 @@ const translations = {
     more: "Banyak",
     focusInsight: "Wawasan Fokus & Pelatih AI",
     defaultInsight: "Anda paling produktif di sesi pagi. Pertahankan momentum!",
-    footer: "FocusPulse &mdash; Pomodoro & Micro-Habit Dashboard &bull; Edisi Lanjutan",
+    footer: "FocusPulse — Pomodoro & Micro-Habit Dashboard • Edisi Lanjutan",
     ambient: "Ambient:"
   }
 };
@@ -70,7 +70,9 @@ const translations = {
 let currentLang = 'en';
 
 function setLanguage(lang) {
+  if (!translations[lang]) lang = 'en';
   currentLang = lang;
+  document.documentElement.lang = lang;
   localStorage.setItem('focuspulse_lang', lang);
   
   // Update active state on language buttons
@@ -90,7 +92,21 @@ function setLanguage(lang) {
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
     if (translations[lang][key]) {
-      el.innerHTML = translations[lang][key];
+      el.textContent = translations[lang][key];
     }
   });
+
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (translations[lang][key]) {
+      el.placeholder = translations[lang][key];
+    }
+  });
+
+  if (window.focusPulseReady) {
+    renderTasks();
+    renderHabits();
+    updateTimerDisplay();
+    updateStatsDisplay();
+  }
 }
