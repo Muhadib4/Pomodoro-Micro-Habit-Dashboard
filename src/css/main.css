@@ -1,33 +1,68 @@
-@import './variables.css';
-
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 1.5rem;
+:root {
+  --bg-primary: #08090a;
+  --bg-secondary: #0f1011;
+  --bg-surface: #191a1b;
+  --bg-elevated: #28282c;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --text-primary: #f7f8f8;
+  --text-muted: #d0d6e0;
+  --text-dim: #8a8f98;
+  --accent: #5e6ad2;
+  --accent-hover: #7170ff;
+  --success: #10b981;
 }
 
-.timer-ring {
-  transition: stroke-dashoffset 1s linear;
+[data-theme="light"] {
+  --bg-primary: #f4f5f7;
+  --bg-secondary: #ffffff;
+  --bg-surface: #eaeef2;
+  --bg-elevated: #e2e8f0;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-subtle: rgba(0, 0, 0, 0.04);
+  --text-primary: #0f172a;
+  --text-muted: #334155;
+  --text-dim: #64748b;
+  --accent: #4f46e5;
+  --accent-hover: #6366f1;
+  --success: #059669;
 }
 
-.interactive-scale {
-  transition: transform 0.15s ease;
-}
-.interactive-scale:active {
-  transform: scale(0.97);
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-feature-settings: "cv01", "ss03";
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Confetti animation for completed goals */
-@keyframes confetti-fall {
-  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-  100% { transform: translateY(500px) rotate(720deg); opacity: 0; }
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
-.confetti-particle {
-  position: fixed;
-  width: 8px;
-  height: 8px;
-  background-color: #7170ff;
-  top: -10px;
-  z-index: 999;
-  animation: confetti-fall 2.5s ease-out forwards;
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--bg-surface);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}
+
+.glow-indigo {
+  box-shadow: 0 0 30px -5px rgba(94, 106, 210, 0.25);
+}
+
+.linear-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  transition: all 0.2s ease, background-color 0.3s ease;
+}
+.linear-card:hover {
+  border-color: var(--text-dim);
 }
