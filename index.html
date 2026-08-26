@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FocusPulse &mdash; Pomodoro & Micro-Habit Dashboard</title>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="./assets/css/style.css">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            linear: {
+              bg: '#08090a',
+              panel: '#0f1011',
+              surface: '#191a1b',
+              elevated: '#28282c',
+              border: 'rgba(255, 255, 255, 0.08)',
+              subtle: 'rgba(255, 255, 255, 0.05)',
+              text: '#f7f8f8',
+              muted: '#d0d6e0',
+              dim: '#8a8f98',
+              indigo: '#5e6ad2',
+              violet: '#7170ff',
+              hover: '#828fff'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="min-h-screen bg-[#08090a] text-[#f7f8f8] selection:bg-[#5e6ad2] selection:text-white flex flex-col">
+
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-[rgba(255,255,255,0.08)] bg-[#0f1011]/80 backdrop-blur-md sticky top-0 z-50 px-6 h-16 flex items-center justify-between">
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-2.5">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-[#5e6ad2] to-[#7170ff] flex items-center justify-center glow-indigo shadow-lg">
+          <i data-lucide="zap" class="w-4 h-4 text-white"></i>
+        </div>
+        <span class="font-semibold text-lg tracking-tight text-[#f7f8f8]">Focus<span class="text-[#7170ff]">Pulse</span></span>
+      </div>
+      <div class="hidden md:flex items-center space-x-2 pl-4 border-l border-[rgba(255,255,255,0.08)] text-xs text-[#8a8f98]">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span id="streak-counter-badge" class="font-medium text-[#f7f8f8]">Day 14 Streak 🔥</span>
+      </div>
+    </div>
+
+    <!-- Quick Stats & Actions Header -->
+    <div class="flex items-center space-x-3">
+      <!-- Ambient Sound Dropdown / Button -->
+      <div class="relative group">
+        <button onclick="toggleAmbientSound()" id="ambient-btn" class="px-3 py-1.5 rounded-xl bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] text-xs text-[#d0d6e0] flex items-center space-x-2 transition-all">
+          <i data-lucide="headphones" class="w-3.5 h-3.5 text-[#7170ff]"></i>
+          <span id="ambient-label">Ambient: Off</span>
+        </button>
+      </div>
+
+      <!-- Sound Theme Switcher -->
+      <div class="hidden sm:flex items-center bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-xl p-0.5 space-x-1">
+        <button onclick="setAmbientSoundType('rain')" class="px-2 py-1 rounded-lg text-[10px] text-[#8a8f98] hover:text-[#f7f8f8] transition-all" title="Rain Sound">🌧️</button>
+        <button onclick="setAmbientSoundType('forest')" class="px-2 py-1 rounded-lg text-[10px] text-[#8a8f98] hover:text-[#f7f8f8] transition-all" title="Forest Sound">🌲</button>
+        <button onclick="setAmbientSoundType('coffee')" class="px-2 py-1 rounded-lg text-[10px] text-[#8a8f98] hover:text-[#f7f8f8] transition-all" title="Cafe Sound">☕</button>
+      </div>
+
+      <button onclick="openStatsModal()" class="px-3 py-1.5 rounded-xl bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] text-xs text-[#d0d6e0] flex items-center space-x-2 transition-all">
+        <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-[#7170ff]"></i>
+        <span>Analytics</span>
+      </button>
+
+      <div class="h-4 w-[1px] bg-[rgba(255,255,255,0.08)]"></div>
+
+      <div class="flex items-center space-x-2 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-full px-3 py-1">
+        <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-[#5e6ad2] to-[#7170ff] flex items-center justify-center text-xs font-semibold text-white shadow">AD</div>
+        <span class="text-xs font-medium text-[#f7f8f8] hidden sm:inline">Productivity Pro</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+    <!-- LEFT COLUMN: Pomodoro Timer & Tasks (7 Cols) -->
+    <div class="lg:col-span-7 space-y-6">
+
+      <!-- Pomodoro Widget Card -->
+      <section class="linear-card p-6 relative overflow-hidden">
+        <!-- Background subtle glow -->
+        <div class="absolute -top-24 -right-24 w-48 h-48 bg-[#5e6ad2]/15 rounded-full blur-3xl pointer-events-none"></div>
+
+        <!-- Mode selector tabs -->
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex bg-[rgba(255,255,255,0.03)] p-1 rounded-xl border border-[rgba(255,255,255,0.05)]">
+            <button onclick="setTimerMode('pomodoro')" id="tab-pomodoro" class="px-4 py-1.5 rounded-lg text-xs font-medium transition-all bg-[#5e6ad2] text-white shadow-sm">Pomodoro</button>
+            <button onclick="setTimerMode('shortBreak')" id="tab-shortBreak" class="px-4 py-1.5 rounded-lg text-xs font-medium transition-all text-[#8a8f98] hover:text-[#f7f8f8]">Short Break</button>
+            <button onclick="setTimerMode('longBreak')" id="tab-longBreak" class="px-4 py-1.5 rounded-lg text-xs font-medium transition-all text-[#8a8f98] hover:text-[#f7f8f8]">Long Break</button>
+          </div>
+          <button onclick="openTimerSettings()" class="text-[#8a8f98] hover:text-[#f7f8f8] p-2 rounded-xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.05)] transition-all" title="Timer Settings">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- Timer Display & Ring -->
+        <div class="flex flex-col items-center justify-center py-4">
+          <div class="relative flex items-center justify-center">
+            <!-- Circular Progress SVG -->
+            <svg class="w-64 h-64 transform -rotate-90">
+              <circle cx="128" cy="128" r="116" stroke="currentColor" stroke-width="6" class="text-[rgba(255,255,255,0.03)]" fill="transparent"/>
+              <circle id="timer-progress-ring" cx="128" cy="128" r="116" stroke="currentColor" stroke-width="6" stroke-dasharray="729" stroke-dashoffset="0" stroke-linecap="round" class="text-[#5e6ad2] transition-all duration-1000" fill="transparent"/>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+              <span id="timer-display" class="font-mono text-5xl font-bold tracking-tighter text-[#f7f8f8]">25:00</span>
+              <span id="timer-status-text" class="text-xs text-[#8a8f98] mt-2 font-medium tracking-wide uppercase">Ready to Focus</span>
+            </div>
+          </div>
+
+          <!-- Timer Controls -->
+          <div class="flex items-center space-x-4 mt-8">
+            <button onclick="toggleTimer()" id="timer-toggle-btn" class="px-8 py-3 rounded-xl bg-[#5e6ad2] hover:bg-[#7170ff] text-white font-medium text-sm transition-all shadow-lg shadow-[#5e6ad2]/25 flex items-center space-x-2">
+              <i data-lucide="play" id="timer-toggle-icon" class="w-4 h-4 fill-current"></i>
+              <span id="timer-toggle-label">Start Focus</span>
+            </button>
+            <button onclick="resetTimer()" class="p-3 rounded-xl bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] text-[#8a8f98] hover:text-[#f7f8f8] transition-all" title="Reset Timer">
+              <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+            </button>
+            <button onclick="skipTimer()" class="p-3 rounded-xl bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] text-[#8a8f98] hover:text-[#f7f8f8] transition-all" title="Skip Session">
+              <i data-lucide="skip-forward" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Active Task linked to Pomodoro -->
+        <div class="mt-4 pt-4 border-t border-[rgba(255,255,255,0.05)] flex items-center justify-between text-xs">
+          <div class="flex items-center space-x-2 text-[#8a8f98] truncate">
+            <i data-lucide="target" class="w-3.5 h-3.5 text-[#7170ff] shrink-0"></i>
+            <span>Current Focus Task:</span>
+            <span id="active-task-name" class="text-[#f7f8f8] font-medium truncate">None selected</span>
+          </div>
+          <span id="pomodoro-sessions-count" class="text-[#8a8f98] font-mono shrink-0">Completed today: 0</span>
+        </div>
+      </section>
+
+      <!-- Task Manager Section -->
+      <section class="linear-card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-[#7170ff]"></i>
+            <h2 class="font-semibold text-sm tracking-tight text-[#f7f8f8]">Focus Tasks & Queue</h2>
+          </div>
+          <div class="text-xs text-[#8a8f98]">
+            <span id="task-progress-text">0/0 completed</span>
+          </div>
+        </div>
+
+        <!-- Add Task Form -->
+        <form onsubmit="addTask(event)" class="flex flex-col sm:flex-row gap-2 mb-4">
+          <input type="text" id="new-task-input" placeholder="Add a new task for this session..." class="flex-1 bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-2.5 text-xs text-[#f7f8f8] placeholder-[#8a8f98] focus:outline-none focus:border-[#5e6ad2] transition-all">
+          <select id="new-task-tag" class="bg-[#191a1b] border border-[rgba(255,255,255,0.08)] rounded-xl px-3 py-2.5 text-xs text-[#d0d6e0] focus:outline-none focus:border-[#5e6ad2]">
+            <option value="Dev">💻 Dev</option>
+            <option value="Design">🎨 Design</option>
+            <option value="Habit">⚡ Habit</option>
+            <option value="Writing">📝 Writing</option>
+          </select>
+          <button type="submit" class="px-4 py-2.5 rounded-xl bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] border border-[rgba(255,255,255,0.08)] text-xs font-medium text-[#f7f8f8] transition-all flex items-center justify-center space-x-1.5 shrink-0">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>Add Task</span>
+          </button>
+        </form>
+
+        <!-- Task List -->
+        <div id="task-list" class="space-y-2.5 max-h-64 overflow-y-auto custom-scrollbar pr-1">
+          <!-- Dynamically populated via app.js -->
+        </div>
+      </section>
+
+    </div>
+
+    <!-- RIGHT COLUMN: Micro-Habits Tracker & Daily Goals (5 Cols) -->
+    <div class="lg:col-span-5 space-y-6">
+
+      <!-- Micro-Habits Section -->
+      <section class="linear-card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="activity" class="w-4 h-4 text-[#7170ff]"></i>
+            <h2 class="font-semibold text-sm tracking-tight text-[#f7f8f8]">Micro-Habits Tracker</h2>
+          </div>
+          <button onclick="openAddHabitModal()" class="text-xs text-[#7170ff] hover:text-[#828fff] flex items-center space-x-1 font-medium transition-all">
+            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+            <span>New Habit</span>
+          </button>
+        </div>
+
+        <p class="text-xs text-[#8a8f98] mb-4">Tiny 2-minute daily habits that compound into massive results over time.</p>
+
+        <!-- Habits List -->
+        <div id="habits-list" class="space-y-3">
+          <!-- Dynamically populated via app.js -->
+        </div>
+      </section>
+
+      <!-- Weekly Consistency Matrix / Heatmap Card -->
+      <section class="linear-card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="calendar" class="w-4 h-4 text-[#7170ff]"></i>
+            <h2 class="font-semibold text-sm tracking-tight text-[#f7f8f8]">Consistency Matrix</h2>
+          </div>
+          <span class="text-xs text-emerald-400 font-medium" id="matrix-streak-label">14 Day Streak</span>
+        </div>
+
+        <p class="text-xs text-[#8a8f98] mb-4">Your daily micro-habit and focus completion overview (past 4 weeks).</p>
+
+        <!-- Heatmap Grid Container -->
+        <div id="heatmap-grid" class="grid grid-cols-7 gap-2">
+          <!-- Populated by app.js -->
+        </div>
+
+        <div class="flex items-center justify-between mt-4 pt-4 border-t border-[rgba(255,255,255,0.05)] text-[11px] text-[#8a8f98]">
+          <span>Less</span>
+          <div class="flex items-center space-x-1">
+            <div class="w-3 h-3 rounded bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)]"></div>
+            <div class="w-3 h-3 rounded bg-[#5e6ad2]/35"></div>
+            <div class="w-3 h-3 rounded bg-[#5e6ad2]/75"></div>
+            <div class="w-3 h-3 rounded bg-[#5e6ad2]"></div>
+          </div>
+          <span>More</span>
+        </div>
+      </section>
+
+      <!-- Daily Motivation / AI Tip Card -->
+      <section class="bg-gradient-to-br from-[#191a1b] to-[#0f1011] border border-[rgba(255,255,255,0.08)] rounded-2xl p-6 relative overflow-hidden">
+        <div class="flex items-start space-x-3">
+          <div class="p-2 rounded-xl bg-[#5e6ad2]/10 border border-[#5e6ad2]/20 text-[#7170ff] shrink-0">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-xs font-semibold text-[#f7f8f8] mb-1">Focus Insight & AI Coach</h3>
+            <p id="ai-insight-text" class="text-xs text-[#d0d6e0] leading-relaxed">"You are most productive during morning Pomodoro sessions. Keep up the momentum by completing your final micro-habit before noon!"</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-[rgba(255,255,255,0.08)] py-4 text-center text-xs text-[#8a8f98]">
+    FocusPulse &mdash; Pomodoro & Micro-Habit Dashboard &bull; Designed with Linear Systems
+  </footer>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- NEW HABIT MODAL -->
+  <div id="habit-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-[#0f1011] border border-[rgba(255,255,255,0.08)] rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-semibold text-[#f7f8f8]">Create New Micro-Habit</h3>
+        <button onclick="closeAddHabitModal()" class="text-[#8a8f98] hover:text-[#f7f8f8]">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <form onsubmit="handleCreateHabit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-[#8a8f98] mb-1">Habit Name</label>
+          <input type="text" id="habit-name-input" required placeholder="e.g., Drink 500ml Water" class="w-full bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-2.5 text-xs text-[#f7f8f8] placeholder-[#8a8f98] focus:outline-none focus:border-[#5e6ad2]">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-[#8a8f98] mb-1">Icon</label>
+            <select id="habit-icon-select" class="w-full bg-[#191a1b] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-2.5 text-xs text-[#f7f8f8] focus:outline-none focus:border-[#5e6ad2]">
+              <option value="droplet">💧 Hydration</option>
+              <option value="book-open">📖 Reading</option>
+              <option value="activity">🧘 Health</option>
+              <option value="code">💻 Code</option>
+              <option value="zap">⚡ Energy</option>
+              <option value="wind">🌬️ Breathe</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-[#8a8f98] mb-1">Category</label>
+            <input type="text" id="habit-category-select" placeholder="e.g., Wellness" class="w-full bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-2.5 text-xs text-[#f7f8f8] placeholder-[#8a8f98] focus:outline-none focus:border-[#5e6ad2]">
+          </div>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="closeAddHabitModal()" class="px-4 py-2 rounded-xl bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.06)] text-xs text-[#8a8f98]">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-xl bg-[#5e6ad2] hover:bg-[#7170ff] text-xs font-medium text-white shadow">Create Habit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TIMER SETTINGS MODAL -->
+  <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-[#0f1011] border border-[rgba(255,255,255,0.08)] rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-semibold text-[#f7f8f8]">Timer Durations (Minutes)</h3>
+        <button onclick="closeTimerSettings()" class="text-[#8a8f98] hover:text-[#f7f8f8]">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <form onsubmit="saveTimerSettings(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-[#8a8f98] mb-1">Pomodoro Duration</label>
+          <input type="number" id="setting-pomodoro-time" min="1" max="60" value="25" class="w-full bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-2.5 text-xs text-[#f7f8f8] focus:outline-none focus:border-[#5e6ad2]">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-[#8a8f98] mb-1">Short Break Duration</label>
+          <input type="number" id="setting-short-time" min="1" max="30" value="5" class="w-full bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-2.5 text-xs text-[#f7f8f8] focus:outline-none focus:border-[#5e6ad2]">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-[#8a8f98] mb-1">Long Break Duration</label>
+          <input type="number" id="setting-long-time" min="1" max="60" value="15" class="w-full bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-2.5 text-xs text-[#f7f8f8] focus:outline-none focus:border-[#5e6ad2]">
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="closeTimerSettings()" class="px-4 py-2 rounded-xl bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.06)] text-xs text-[#8a8f98]">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-xl bg-[#5e6ad2] hover:bg-[#7170ff] text-xs font-medium text-white shadow">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ANALYTICS MODAL -->
+  <div id="analytics-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-[#0f1011] border border-[rgba(255,255,255,0.08)] rounded-2xl p-6 w-full max-w-lg shadow-2xl relative">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-semibold text-[#f7f8f8]">Productivity & Habit Analytics</h3>
+        <button onclick="closeStatsModal()" class="text-[#8a8f98] hover:text-[#f7f8f8]">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="space-y-4">
+        <div class="grid grid-cols-3 gap-3">
+          <div class="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-xl p-4 text-center">
+            <span id="stat-total-pomodoros" class="block font-mono text-2xl font-bold text-[#f7f8f8]">12</span>
+            <span class="text-[11px] text-[#8a8f98]">Pomodoros Done</span>
+          </div>
+          <div class="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-xl p-4 text-center">
+            <span id="stat-focus-hours" class="block font-mono text-2xl font-bold text-[#7170ff]">5.2h</span>
+            <span class="text-[11px] text-[#8a8f98]">Total Focus Time</span>
+          </div>
+          <div class="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-xl p-4 text-center">
+            <span id="stat-habit-rate" class="block font-mono text-2xl font-bold text-emerald-400">88%</span>
+            <span class="text-[11px] text-[#8a8f98]">Habit Success</span>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)]">
+          <h4 class="text-xs font-semibold text-[#f7f8f8] mb-3">Weekly Focus Distribution</h4>
+          <div class="h-32 flex items-end justify-between pt-4 px-2 space-x-2">
+            <div class="w-full bg-[rgba(255,255,255,0.03)] rounded-t flex flex-col justify-end items-center h-full relative group">
+              <div class="w-full bg-[#5e6ad2]/60 rounded-t transition-all" style="height: 60%;"></div>
+              <span class="text-[10px] text-[#8a8f98] mt-1">Mon</span>
+            </div>
+            <div class="w-full bg-[rgba(255,255,255,0.03)] rounded-t flex flex-col justify-end items-center h-full relative group">
+              <div class="w-full bg-[#5e6ad2]/80 rounded-t transition-all" style="height: 85%;"></div>
+              <span class="text-[10px] text-[#8a8f98] mt-1">Tue</span>
+            </div>
+            <div class="w-full bg-[rgba(255,255,255,0.03)] rounded-t flex flex-col justify-end items-center h-full relative group">
+              <div class="w-full bg-[#5e6ad2] rounded-t transition-all" style="height: 95%;"></div>
+              <span class="text-[10px] text-[#8a8f98] mt-1">Wed</span>
+            </div>
+            <div class="w-full bg-[rgba(255,255,255,0.03)] rounded-t flex flex-col justify-end items-center h-full relative group">
+              <div class="w-full bg-[#5e6ad2]/70 rounded-t transition-all" style="height: 70%;"></div>
+              <span class="text-[10px] text-[#8a8f98] mt-1">Thu</span>
+            </div>
+            <div class="w-full bg-[rgba(255,255,255,0.03)] rounded-t flex flex-col justify-end items-center h-full relative group">
+              <div class="w-full bg-[#5e6ad2]/90 rounded-t transition-all" style="height: 90%;"></div>
+              <span class="text-[10px] text-[#8a8f98] mt-1">Fri</span>
+            </div>
+            <div class="w-full bg-[rgba(255,255,255,0.03)] rounded-t flex flex-col justify-end items-center h-full relative group">
+              <div class="w-full bg-[#5e6ad2]/40 rounded-t transition-all" style="height: 45%;"></div>
+              <span class="text-[10px] text-[#8a8f98] mt-1">Sat</span>
+            </div>
+            <div class="w-full bg-[rgba(255,255,255,0.03)] rounded-t flex flex-col justify-end items-center h-full relative group">
+              <div class="w-full bg-[#5e6ad2]/55 rounded-t transition-all" style="height: 55%;"></div>
+              <span class="text-[10px] text-[#8a8f98] mt-1">Sun</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Application Entry -->
+  <script src="./assets/js/app.js"></script>
+</body>
+</html>

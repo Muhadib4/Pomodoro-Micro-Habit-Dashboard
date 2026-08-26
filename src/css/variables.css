@@ -1,0 +1,65 @@
+:root {
+  --bg-primary: #08090a;
+  --bg-secondary: #0f1011;
+  --bg-surface: #191a1b;
+  --bg-elevated: #28282c;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --text-primary: #f7f8f8;
+  --text-muted: #d0d6e0;
+  --text-dim: #8a8f98;
+  --accent-indigo: #5e6ad2;
+  --accent-violet: #7170ff;
+  --accent-hover: #828fff;
+}
+
+body.light-mode {
+  --bg-primary: #f4f5f7;
+  --bg-secondary: #ffffff;
+  --bg-surface: #eaecef;
+  --bg-elevated: #dfE2E6;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-subtle: rgba(0, 0, 0, 0.05);
+  --text-primary: #171a21;
+  --text-muted: #4a5568;
+  --text-dim: #718096;
+  --accent-indigo: #4c51bf;
+  --accent-violet: #5a67d8;
+  --accent-hover: #434190;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-feature-settings: "cv01", "ss03";
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.02);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(100, 100, 100, 0.2);
+  border-radius: 3px;
+}
+
+.glow-indigo {
+  box-shadow: 0 0 35px -5px rgba(94, 106, 210, 0.3);
+}
+
+.linear-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  transition: all 0.2s ease;
+}
+.linear-card:hover {
+  border-color: var(--accent-indigo);
+}

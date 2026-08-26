@@ -1,0 +1,33 @@
+@import './variables.css';
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.timer-ring {
+  transition: stroke-dashoffset 1s linear;
+}
+
+.interactive-scale {
+  transition: transform 0.15s ease;
+}
+.interactive-scale:active {
+  transform: scale(0.97);
+}
+
+/* Confetti animation for completed goals */
+@keyframes confetti-fall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(500px) rotate(720deg); opacity: 0; }
+}
+.confetti-particle {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  background-color: #7170ff;
+  top: -10px;
+  z-index: 999;
+  animation: confetti-fall 2.5s ease-out forwards;
+}
