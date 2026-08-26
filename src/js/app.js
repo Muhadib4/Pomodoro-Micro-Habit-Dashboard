@@ -29,6 +29,12 @@ const AMBIENTS = [
   { id:'pink', name:'Pink Noise', icon:'audio-lines', category:'noise', color:'#ff9fcb', description:{id:'Noise seimbang yang terasa lebih lembut.',en:'Balanced noise with a softer texture.'} },
   { id:'brown', name:'Brown Noise', icon:'activity', category:'noise', color:'#c18b6a', description:{id:'Nada rendah dan dalam untuk fokus tenang.',en:'Deep low tones for grounded focus.'} },
   { id:'space', name:'Deep Space', icon:'orbit', category:'noise', color:'#8b7cff', description:{id:'Dengung luas seperti kabin antariksa.',en:'A wide hum like a distant space cabin.'} }
+  ,{ id:'dungeon', name:'Ancient Dungeon', icon:'castle', category:'fantasy', color:'#8a8f9b', description:{id:'Gema batu, udara dingin, dan lorong kuno.',en:'Stone echoes, cold air, and ancient corridors.'} }
+  ,{ id:'magic', name:'Arcane Chamber', icon:'sparkles', category:'fantasy', color:'#b489ff', description:{id:'Dengung sihir lembut di ruang rahasia.',en:'A soft magical hum inside a hidden chamber.'} }
+  ,{ id:'dragon', name:'Dragon Mountain', icon:'mountain-snow', category:'fantasy', color:'#ff805f', description:{id:'Angin pegunungan dan gemuruh jauh.',en:'Mountain wind and a distant low rumble.'} }
+  ,{ id:'fairy', name:'Fairy Garden', icon:'flower-2', category:'fantasy', color:'#84e9b4', description:{id:'Taman berkilau dengan udara yang ringan.',en:'A shimmering garden with airy movement.'} }
+  ,{ id:'academy', name:'Wizard Academy', icon:'graduation-cap', category:'fantasy', color:'#72a7ff', description:{id:'Ruang belajar magis yang sunyi dan luas.',en:'A quiet, spacious hall for magical study.'} }
+  ,{ id:'airship', name:'Fantasy Airship', icon:'cloudy', category:'fantasy', color:'#d8c18b', description:{id:'Mesin halus dan angin di atas awan.',en:'Soft machinery and wind above the clouds.'} }
 ];
 
 const RANDOM_TASKS = {
@@ -598,10 +604,10 @@ function createNoiseBuffer(context, type) {
   let slow = 0;
   for (let index = 0; index < length; index += 1) {
     const white = Math.random() * 2 - 1;
-    if (['brown','fireplace','train','thunder','space'].indexOf(type) !== -1) {
+    if (['brown','fireplace','train','thunder','space','dungeon','dragon','airship'].indexOf(type) !== -1) {
       last = (last + 0.018 * white) / 1.018;
       data[index] = last * 3.2;
-    } else if (['pink','rain','forest','library','night','cafe','tavern'].indexOf(type) !== -1) {
+    } else if (['pink','rain','forest','library','night','cafe','tavern','magic','fairy','academy'].indexOf(type) !== -1) {
       last = 0.984 * last + 0.14 * white;
       data[index] = last * 0.34;
     } else if (type === 'river' || type === 'ocean' || type === 'wind') {
@@ -630,7 +636,9 @@ function startAmbient() {
       night:['lowpass',900,.5], fireplace:['lowpass',720,.6], library:['lowpass',390,.7],
       cafe:['bandpass',620,.5], tavern:['bandpass',520,.6], clockwork:['bandpass',1450,1.5],
       train:['lowpass',430,.8], fan:['bandpass',720,1.2], white:['allpass',1000,0],
-      pink:['lowpass',2300,.4], brown:['lowpass',470,.5], space:['lowpass',320,.9]
+      pink:['lowpass',2300,.4], brown:['lowpass',470,.5], space:['lowpass',320,.9],
+      dungeon:['lowpass',280,1.1], magic:['bandpass',1350,1.7], dragon:['lowpass',240,.9],
+      fairy:['highpass',1150,.45], academy:['lowpass',520,.75], airship:['bandpass',430,1.15]
     }[type] || ['lowpass',1200,.5];
 
     source.buffer = createNoiseBuffer(context, type);
@@ -647,10 +655,10 @@ function startAmbient() {
     ambientNodes = [source, filter, master];
     ambientNodes.master = master;
 
-    if (['ocean','river','wind','train','thunder'].indexOf(type) !== -1) {
+    if (['ocean','river','wind','train','thunder','dragon','airship','fairy'].indexOf(type) !== -1) {
       const lfo = context.createOscillator();
       const depth = context.createGain();
-      lfo.frequency.value = type === 'thunder' ? 0.035 : type === 'train' ? 1.8 : type === 'river' ? 0.22 : 0.1;
+      lfo.frequency.value = (type === 'thunder' || type === 'dragon') ? 0.035 : (type === 'train' || type === 'airship') ? 1.8 : type === 'river' ? 0.22 : type === 'fairy' ? 0.35 : 0.1;
       depth.gain.value = state.ambient.volume / (type === 'thunder' ? 850 : 650);
       lfo.connect(depth);
       depth.connect(master.gain);
