@@ -1,112 +1,71 @@
 const translations = {
-  en: {
-    streak: "Day 14 Streak 🔥",
-    analytics: "Analytics",
-    pomodoro: "Pomodoro",
-    shortBreak: "Short Break",
-    longBreak: "Long Break",
-    startFocus: "Start Focus",
-    pause: "Pause",
-    ready: "Ready to Focus",
-    activeSession: "Focus Session Active",
-    breakProgress: "Break in Progress",
-    paused: "Timer Paused",
-    currentTask: "Current Focus Task:",
-    noneSelected: "None selected",
-    completedToday: "Completed today:",
-    focusTasks: "Focus Tasks & Queue",
-    addTaskPlaceholder: "Add a new task for this session...",
-    addTaskBtn: "Add Task",
-    completed: "completed",
-    microHabits: "Micro-Habits Tracker",
-    newHabit: "New Habit",
-    habitsDesc: "Tiny 2-minute daily habits that compound into massive results over time.",
-    doHabit: "Do",
-    doneHabit: "Completed",
-    consistencyMatrix: "Consistency Matrix",
-    matrixDesc: "Your daily micro-habit and focus completion overview (past 4 weeks).",
-    less: "Less",
-    more: "More",
-    focusInsight: "Focus Insight & AI Coach",
-    defaultInsight: "You are most productive during morning Pomodoro sessions. Keep up the momentum!",
-    footer: "FocusPulse — Pomodoro & Micro-Habit Dashboard • Advanced Edition",
-    ambient: "Ambient:"
-  },
   id: {
-    streak: "Streak 14 Hari 🔥",
-    analytics: "Analitik",
-    pomodoro: "Pomodoro",
-    shortBreak: "Istirahat Singkat",
-    longBreak: "Istirahat Panjang",
-    startFocus: "Mulai Fokus",
-    pause: "Jeda",
-    ready: "Siap Fokus",
-    activeSession: "Sesi Fokus Aktif",
-    breakProgress: "Waktu Istirahat",
-    paused: "Timer Dijeda",
-    currentTask: "Task Fokus Saat Ini:",
-    noneSelected: "Belum dipilih",
-    completedToday: "Selesai hari ini:",
-    focusTasks: "Daftar & Antrean Tugas",
-    addTaskPlaceholder: "Tambah tugas baru untuk sesi ini...",
-    addTaskBtn: "Tambah Tugas",
-    completed: "selesai",
-    microHabits: "Pelacak Kebiasaan Mikro",
-    newHabit: "Habit Baru",
-    habitsDesc: "Kebiasaan kecil 2 menit sehari yang menghasilkan perubahan besar.",
-    doHabit: "Lakukan",
-    doneHabit: "Selesai",
-    consistencyMatrix: "Matriks Konsistensi",
-    matrixDesc: "Ringkasan harian penyelesaian kebiasaan & fokus (4 minggu terakhir).",
-    less: "Sedikit",
-    more: "Banyak",
-    focusInsight: "Wawasan Fokus & Pelatih AI",
-    defaultInsight: "Anda paling produktif di sesi pagi. Pertahankan momentum!",
-    footer: "FocusPulse — Pomodoro & Micro-Habit Dashboard • Edisi Lanjutan",
-    ambient: "Ambient:"
+    dayStreak: 'hari streak', language: 'Bahasa', focusRitual: 'Ritual fokus', focus: 'Fokus',
+    shortBreak: 'Istirahat Pendek', longBreak: 'Istirahat Panjang', ready: 'Siap memulai',
+    start: 'Mulai', pause: 'Jeda', reset: 'Reset', skip: 'Lewati', currentQuest: 'Quest aktif:',
+    noneSelected: 'Belum ada yang dipilih', pomodoroOptions: 'Opsi Pomodoro', preset: 'Preset',
+    applyDuration: 'Terapkan durasi', soundscape: 'Soundscape', ambientWorld: 'Dunia ambient',
+    chooseAmbient: 'Pilih ambient', volume: 'Volume', dailyProgress: 'Progres harian',
+    microHabits: 'Micro habits', newHabitPlaceholder: 'Tambah kebiasaan kecil...',
+    questBoard: 'Papan quest', todayTasks: 'Tugas hari ini', surpriseMe: 'Kasih random',
+    taskPlaceholder: 'Apa yang ingin kamu selesaikan?', addQuest: 'Tambah quest',
+    emptyTasks: 'Papan quest masih kosong.', tryRandom: 'Coba tugas random',
+    footerText: 'Aksi kecil, konsistensi legendaris.', sessions: 'sesi', running: 'Sedang fokus',
+    breakRunning: 'Sedang istirahat', paused: 'Dijeda', focusComplete: 'Sesi fokus selesai!',
+    breakComplete: 'Istirahat selesai. Siap fokus lagi?', taskAdded: 'Quest random ditambahkan!',
+    durationsSaved: 'Durasi Pomodoro disimpan.', ambientOn: 'Ambient dinyalakan',
+    ambientOff: 'Ambient dimatikan', focusAction: 'Fokus', active: 'Aktif', delete: 'Hapus'
+  },
+  en: {
+    dayStreak: 'day streak', language: 'Language', focusRitual: 'Focus ritual', focus: 'Focus',
+    shortBreak: 'Short Break', longBreak: 'Long Break', ready: 'Ready to begin',
+    start: 'Start', pause: 'Pause', reset: 'Reset', skip: 'Skip', currentQuest: 'Current quest:',
+    noneSelected: 'None selected', pomodoroOptions: 'Pomodoro options', preset: 'Preset',
+    applyDuration: 'Apply durations', soundscape: 'Soundscape', ambientWorld: 'Ambient world',
+    chooseAmbient: 'Choose ambient', volume: 'Volume', dailyProgress: 'Daily progress',
+    microHabits: 'Micro habits', newHabitPlaceholder: 'Add a tiny habit...',
+    questBoard: 'Quest board', todayTasks: "Today's tasks", surpriseMe: 'Surprise me',
+    taskPlaceholder: 'What do you want to finish?', addQuest: 'Add quest',
+    emptyTasks: 'Your quest board is empty.', tryRandom: 'Try a random task',
+    footerText: 'Small actions, legendary consistency.', sessions: 'sessions', running: 'Focus in progress',
+    breakRunning: 'Break in progress', paused: 'Paused', focusComplete: 'Focus session complete!',
+    breakComplete: 'Break complete. Ready to focus again?', taskAdded: 'Random quest added!',
+    durationsSaved: 'Pomodoro durations saved.', ambientOn: 'Ambient sound on',
+    ambientOff: 'Ambient sound off', focusAction: 'Focus', active: 'Active', delete: 'Delete'
   }
 };
 
-let currentLang = 'en';
+let currentLang = localStorage.getItem('focuspulse_language') || 'id';
+
+function t(key) {
+  return (translations[currentLang] && translations[currentLang][key]) || translations.id[key] || key;
+}
 
 function setLanguage(lang) {
-  if (!translations[lang]) lang = 'en';
-  currentLang = lang;
-  document.documentElement.lang = lang;
-  localStorage.setItem('focuspulse_lang', lang);
-  
-  // Update active state on language buttons
-  const btnEn = document.getElementById('lang-en');
-  const btnId = document.getElementById('lang-id');
-  if (btnEn && btnId) {
-    if (lang === 'en') {
-      btnEn.className = 'px-2 py-1 rounded text-xs font-medium bg-[#5e6ad2] text-white';
-      btnId.className = 'px-2 py-1 rounded text-xs font-medium text-[#8a8f98] hover:text-[#f7f8f8]';
-    } else {
-      btnId.className = 'px-2 py-1 rounded text-xs font-medium bg-[#5e6ad2] text-white';
-      btnEn.className = 'px-2 py-1 rounded text-xs font-medium text-[#8a8f98] hover:text-[#f7f8f8]';
-    }
-  }
-  
-  // Translate static DOM elements
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const key = el.getAttribute('data-i18n');
-    if (translations[lang][key]) {
-      el.textContent = translations[lang][key];
-    }
-  });
+  currentLang = translations[lang] ? lang : 'id';
+  localStorage.setItem('focuspulse_language', currentLang);
+  document.documentElement.lang = currentLang;
 
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-    const key = el.getAttribute('data-i18n-placeholder');
-    if (translations[lang][key]) {
-      el.placeholder = translations[lang][key];
-    }
+  const selector = document.getElementById('language-select');
+  if (selector) selector.value = currentLang;
+
+  document.querySelectorAll('[data-i18n]').forEach(function (element) {
+    element.textContent = t(element.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(function (element) {
+    element.placeholder = t(element.dataset.i18nPlaceholder);
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(function (element) {
+    const value = t(element.dataset.i18nTitle);
+    element.title = value;
+    element.setAttribute('aria-label', value);
   });
 
   if (window.focusPulseReady) {
-    renderTasks();
-    renderHabits();
-    updateTimerDisplay();
-    updateStatsDisplay();
+    updateAllUI();
   }
 }
+
+window.addEventListener('DOMContentLoaded', function () {
+  setLanguage(currentLang);
+});

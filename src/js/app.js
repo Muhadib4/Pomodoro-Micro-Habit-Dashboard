@@ -1,40 +1,87 @@
-// FocusPulse & Micro-Habit Dashboard &mdash; App Logic
-
-let state = {
-  timer: {
-    mode: 'pomodoro',
-    duration: 25 * 60,
-    timeLeft: 25 * 60,
-    isRunning: false,
-    timerId: null,
-    completedPomodoros: 0,
-    totalFocusMinutes: 125
-  },
-  tasks: [
-    { id: 1, text: 'Design frontend architecture & Linear UI components', completed: true, active: false, tag: 'Design' },
-    { id: 2, text: 'Implement Pomodoro countdown & audio synthesizer', completed: false, active: true, tag: 'Dev' },
-    { id: 3, text: 'Build Micro-Habits tracker with streak persistence', completed: false, active: false, tag: 'Habit' },
-    { id: 4, text: 'Polish localization & theme switcher', completed: false, active: false, tag: 'System' }
-  ],
-  habits: [
-    { id: 1, name: 'Drink 500ml Water', icon: 'droplet', completedToday: true, streak: 14, category: 'Health' },
-    { id: 2, name: '2-Min Desk Stretch', icon: 'activity', completedToday: false, streak: 6, category: 'Wellness' },
-    { id: 3, name: 'Read 10 Pages of Book', icon: 'book-open', completedToday: true, streak: 9, category: 'Growth' },
-    { id: 4, name: 'Review Daily Priorities', icon: 'zap', completedToday: false, streak: 5, category: 'Productivity' },
-    { id: 5, name: 'Quick Mindfulness / Breathe', icon: 'wind', completedToday: true, streak: 12, category: 'Mental' }
-  ],
-  ambientPlaying: false,
-  soundTheme: 'rain',
-  pomodoroDurations: {
-    pomodoro: 25 * 60,
-    shortBreak: 5 * 60,
-    longBreak: 15 * 60
-  }
+const STORAGE_KEY = 'focuspulse_v2_state';
+const PRESETS = {
+  quick: { focus: 15, short: 3, long: 8 },
+  classic: { focus: 25, short: 5, long: 15 },
+  deep: { focus: 40, short: 8, long: 20 },
+  flow: { focus: 50, short: 10, long: 25 },
+  epic: { focus: 90, short: 20, long: 30 }
 };
 
-let audioCtx = null;
-let ambientNode = null;
-let ambientGainNode = null;
+const RANDOM_TASKS = {
+  id: [
+    { text: 'Rapikan 10 file di laptop', tag: 'Life' },
+    { text: 'Belajar satu konsep coding selama 15 menit', tag: 'Code' },
+    { text: 'Tulis tiga prioritas untuk besok', tag: 'Study' },
+    { text: 'Baca lima halaman buku', tag: 'Study' },
+    { text: 'Rapikan meja selama lima menit', tag: 'Life' },
+    { text: 'Buat mini project tanpa tutorial', tag: 'Code' },
+    { text: 'Catat satu ide project yang unik', tag: 'Creative' },
+    { text: 'Review catatan kuliah hari ini', tag: 'Study' },
+    { text: 'Backup satu folder penting', tag: 'Life' },
+    { text: 'Coba shortcut keyboard baru', tag: 'Random' },
+    { text: 'Buat desain kecil dengan tema fantasy', tag: 'Creative' },
+    { text: 'Selesaikan satu bug kecil yang tertunda', tag: 'Code' }
+  ],
+  en: [
+    { text: 'Organize 10 files on your laptop', tag: 'Life' },
+    { text: 'Learn one coding concept for 15 minutes', tag: 'Code' },
+    { text: 'Write three priorities for tomorrow', tag: 'Study' },
+    { text: 'Read five pages of a book', tag: 'Study' },
+    { text: 'Tidy your desk for five minutes', tag: 'Life' },
+    { text: 'Build a tiny project without a tutorial', tag: 'Code' },
+    { text: 'Write down one unusual project idea', tag: 'Creative' },
+    { text: "Review today's study notes", tag: 'Study' },
+    { text: 'Back up one important folder', tag: 'Life' },
+    { text: 'Learn a new keyboard shortcut', tag: 'Random' },
+    { text: 'Make a small fantasy-themed design', tag: 'Creative' },
+    { text: 'Finish one small delayed bug', tag: 'Code' }
+  ]
+};
+
+const defaultState = {
+  timer: {
+    mode: 'focus',
+    durations: { focus: 25, short: 5, long: 15 },
+    timeLeft: 25 * 60,
+    isRunning: false,
+    sessions: 0,
+    intervalId: null
+  },
+  tasks: [],
+  habits: [
+    { id: 1, name: 'Minum air', completed: false },
+    { id: 2, name: 'Baca 5 halaman', completed: false },
+    { id: 3, name: 'Rapikan meja', completed: false }
+  ],
+  activeTaskId: null,
+  streak: 0,
+  lastActivityDate: '',
+  habitDate: localDateKey(),
+  ambient: { type: 'rain', volume: 35, playing: false }
+};
+
+let state = clone(defaultState);
+let audioContext = null;
+let ambientNodes = [];
+let toastTimer = null;
+
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function localDateKey(date) {
+  const value = date || new Date();
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  return year + '-' + month + '-' + day;
+}
+
+function yesterdayKey() {
+  const date = new Date();
+  date.setDate(date.getDate() - 1);
+  return localDateKey(date);
+}
 
 function refreshIcons() {
   if (window.lucide && typeof window.lucide.createIcons === 'function') {
@@ -43,474 +90,536 @@ function refreshIcons() {
 }
 
 function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, char => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
-  })[char]);
+  return String(value).replace(/[&<>"']/g, function (character) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character];
+  });
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  loadFromLocalStorage();
-  refreshIcons();
-  renderTasks();
-  renderHabits();
-  renderHeatmap();
-  updateTimerDisplay();
-  updateStatsDisplay();
-  window.focusPulseReady = true;
-});
+function safeId(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : Date.now();
+}
 
-function saveToLocalStorage() {
+function loadState() {
   try {
-    localStorage.setItem('focuspulse_state', JSON.stringify({
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (!saved || typeof saved !== 'object') return;
+
+    if (saved.timer && saved.timer.durations) {
+      ['focus', 'short', 'long'].forEach(function (mode) {
+        const duration = Number(saved.timer.durations[mode]);
+        if (duration >= 1 && duration <= 180) state.timer.durations[mode] = duration;
+      });
+      state.timer.sessions = Math.max(0, Number(saved.timer.sessions) || 0);
+    }
+
+    if (Array.isArray(saved.tasks)) {
+      state.tasks = saved.tasks.slice(0, 100).map(function (task) {
+        return {
+          id: safeId(task.id),
+          text: String(task.text || '').slice(0, 100),
+          tag: String(task.tag || 'Random').slice(0, 20),
+          completed: Boolean(task.completed)
+        };
+      }).filter(function (task) { return task.text; });
+    }
+
+    if (Array.isArray(saved.habits)) {
+      state.habits = saved.habits.slice(0, 20).map(function (habit) {
+        return {
+          id: safeId(habit.id),
+          name: String(habit.name || '').slice(0, 60),
+          completed: Boolean(habit.completed)
+        };
+      }).filter(function (habit) { return habit.name; });
+    }
+
+    state.activeTaskId = saved.activeTaskId == null ? null : safeId(saved.activeTaskId);
+    state.streak = Math.max(0, Number(saved.streak) || 0);
+    state.lastActivityDate = typeof saved.lastActivityDate === 'string' ? saved.lastActivityDate : '';
+    state.habitDate = typeof saved.habitDate === 'string' ? saved.habitDate : localDateKey();
+
+    if (saved.ambient) {
+      state.ambient.type = String(saved.ambient.type || 'rain');
+      state.ambient.volume = Math.min(100, Math.max(0, Number(saved.ambient.volume) || 0));
+    }
+  } catch (error) {
+    console.warn('Could not load saved FocusPulse data.', error);
+  }
+
+  if (state.habitDate !== localDateKey()) {
+    state.habits.forEach(function (habit) { habit.completed = false; });
+    state.habitDate = localDateKey();
+  }
+
+  if (state.lastActivityDate && state.lastActivityDate !== localDateKey() && state.lastActivityDate !== yesterdayKey()) {
+    state.streak = 0;
+  }
+
+  state.timer.mode = 'focus';
+  state.timer.timeLeft = state.timer.durations.focus * 60;
+  state.timer.isRunning = false;
+  state.timer.intervalId = null;
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      timer: { durations: state.timer.durations, sessions: state.timer.sessions },
       tasks: state.tasks,
       habits: state.habits,
-      completedPomodoros: state.timer.completedPomodoros,
-      totalFocusMinutes: state.timer.totalFocusMinutes
+      activeTaskId: state.activeTaskId,
+      streak: state.streak,
+      lastActivityDate: state.lastActivityDate,
+      habitDate: state.habitDate,
+      ambient: { type: state.ambient.type, volume: state.ambient.volume }
     }));
-  } catch(e) {}
+  } catch (error) {
+    console.warn('Could not save FocusPulse data.', error);
+  }
 }
 
-function loadFromLocalStorage() {
-  try {
-    const saved = localStorage.getItem('focuspulse_state');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed.tasks) state.tasks = parsed.tasks;
-      if (parsed.habits) state.habits = parsed.habits;
-      if (parsed.completedPomodoros !== undefined) state.timer.completedPomodoros = parsed.completedPomodoros;
-      if (parsed.totalFocusMinutes !== undefined) state.timer.totalFocusMinutes = parsed.totalFocusMinutes;
-    }
-  } catch(e) {}
+function recordActivity() {
+  const today = localDateKey();
+  if (state.lastActivityDate === today) return;
+  state.streak = state.lastActivityDate === yesterdayKey() ? state.streak + 1 : 1;
+  state.lastActivityDate = today;
+  saveState();
+  updateStreak();
 }
 
-// ==================== TIMER ENGINE ====================
+function updateStreak() {
+  const element = document.getElementById('streak-count');
+  if (element) element.textContent = String(state.streak);
+}
+
 function setTimerMode(mode) {
+  if (!state.timer.durations[mode]) return;
+  pauseTimer(false);
   state.timer.mode = mode;
-  state.timer.duration = state.pomodoroDurations[mode];
-  state.timer.timeLeft = state.timer.duration;
-  pauseTimer();
-  
-  ['pomodoro', 'shortBreak', 'longBreak'].forEach(m => {
-    const btn = document.getElementById(`tab-${m}`);
-    if (btn) {
-      if (m === mode) {
-        btn.className = 'px-4 py-1.5 rounded-lg text-xs font-medium transition-all bg-[#5e6ad2] text-white shadow-sm';
-      } else {
-        btn.className = 'px-4 py-1.5 rounded-lg text-xs font-medium transition-all text-[#8a8f98] hover:text-[#f7f8f8]';
-      }
-    }
-  });
-  updateTimerDisplay();
+  state.timer.timeLeft = state.timer.durations[mode] * 60;
+  updateTimerUI();
 }
 
 function toggleTimer() {
-  if (state.timer.isRunning) {
-    pauseTimer();
-  } else {
-    startTimer();
-  }
+  if (state.timer.isRunning) pauseTimer(true);
+  else startTimer();
 }
 
 function startTimer() {
+  if (state.timer.isRunning) return;
   state.timer.isRunning = true;
-  const labelEl = document.getElementById('timer-toggle-label');
-  const iconEl = document.getElementById('timer-toggle-icon');
-  const statusEl = document.getElementById('timer-status-text');
-
-  if (labelEl) labelEl.innerText = translations[currentLang].pause;
-  if (iconEl) iconEl.setAttribute('data-lucide', 'pause');
-  if (statusEl) statusEl.innerText = state.timer.mode === 'pomodoro' ? translations[currentLang].activeSession : translations[currentLang].breakProgress;
-  refreshIcons();
-
-  state.timer.timerId = setInterval(() => {
-    if (state.timer.timeLeft > 0) {
-      state.timer.timeLeft--;
-      if (state.timer.mode === 'pomodoro') {
-        state.timer.totalFocusMinutes += 1/60;
-      }
-      updateTimerDisplay();
-    } else {
-      clearInterval(state.timer.timerId);
-      state.timer.isRunning = false;
-      playCompletionDing();
-      
-      if (state.timer.mode === 'pomodoro') {
-        state.timer.completedPomodoros++;
-        saveToLocalStorage();
-        updateStatsDisplay();
-      }
-      
-      alert(currentLang === 'id' ? 'Sesi selesai!' : 'Session completed!');
-      resetTimer();
-    }
+  state.timer.intervalId = window.setInterval(function () {
+    state.timer.timeLeft = Math.max(0, state.timer.timeLeft - 1);
+    updateTimerUI();
+    if (state.timer.timeLeft === 0) completeTimer();
   }, 1000);
+  updateTimerUI();
 }
 
-function pauseTimer() {
+function pauseTimer(showPaused) {
+  window.clearInterval(state.timer.intervalId);
+  state.timer.intervalId = null;
   state.timer.isRunning = false;
-  clearInterval(state.timer.timerId);
-  const labelEl = document.getElementById('timer-toggle-label');
-  const iconEl = document.getElementById('timer-toggle-icon');
-  const statusEl = document.getElementById('timer-status-text');
-  
-  if (labelEl) labelEl.innerText = translations[currentLang].startFocus;
-  if (iconEl) iconEl.setAttribute('data-lucide', 'play');
-  if (statusEl) statusEl.innerText = translations[currentLang].paused;
-  refreshIcons();
+  updateTimerUI(showPaused ? 'paused' : null);
 }
 
 function resetTimer() {
-  pauseTimer();
-  state.timer.timeLeft = state.timer.duration;
-  updateTimerDisplay();
-  const statusEl = document.getElementById('timer-status-text');
-  if (statusEl) statusEl.innerText = translations[currentLang].ready;
+  pauseTimer(false);
+  state.timer.timeLeft = state.timer.durations[state.timer.mode] * 60;
+  updateTimerUI();
 }
 
 function skipTimer() {
-  pauseTimer();
-  if (state.timer.mode === 'pomodoro') setTimerMode('shortBreak');
-  else setTimerMode('pomodoro');
+  const next = state.timer.mode === 'focus' ? 'short' : 'focus';
+  setTimerMode(next);
 }
 
-function updateTimerDisplay() {
+function completeTimer() {
+  pauseTimer(false);
+  playChime();
+
+  if (state.timer.mode === 'focus') {
+    state.timer.sessions += 1;
+    recordActivity();
+    showToast(t('focusComplete'));
+    setTimerMode(state.timer.sessions % 4 === 0 ? 'long' : 'short');
+  } else {
+    showToast(t('breakComplete'));
+    setTimerMode('focus');
+  }
+  saveState();
+  updateAllUI();
+}
+
+function updateTimerUI(forcedStatus) {
   const minutes = Math.floor(state.timer.timeLeft / 60);
   const seconds = state.timer.timeLeft % 60;
-  const displayStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  
-  const displayEl = document.getElementById('timer-display');
-  if (displayEl) displayEl.innerText = displayStr;
-  document.title = `${displayStr} — FocusPulse`;
+  const display = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+  const durationSeconds = state.timer.durations[state.timer.mode] * 60;
+  const progress = durationSeconds ? state.timer.timeLeft / durationSeconds : 0;
 
+  const displayElement = document.getElementById('timer-display');
   const ring = document.getElementById('timer-progress-ring');
-  if (ring) {
-    const circumference = 729;
-    const progress = state.timer.timeLeft / state.timer.duration;
-    const offset = circumference - (progress * circumference);
-    ring.style.strokeDashoffset = offset;
+  const label = document.getElementById('timer-toggle-label');
+  const icon = document.getElementById('timer-toggle-icon');
+  const status = document.getElementById('timer-status');
+
+  if (displayElement) displayElement.textContent = display;
+  if (ring) ring.style.strokeDashoffset = String(729 - 729 * progress);
+  if (label) label.textContent = state.timer.isRunning ? t('pause') : t('start');
+  if (icon) icon.setAttribute('data-lucide', state.timer.isRunning ? 'pause' : 'play');
+
+  if (status) {
+    if (forcedStatus === 'paused') status.textContent = t('paused');
+    else if (state.timer.isRunning) status.textContent = state.timer.mode === 'focus' ? t('running') : t('breakRunning');
+    else status.textContent = t('ready');
   }
-}
 
-// ==================== AUDIO SYNTH ====================
-function playCompletionDing() {
-  try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 2.0);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 2.0);
-  } catch (e) {}
-}
-
-function toggleAmbientSound() {
-  state.ambientPlaying = !state.ambientPlaying;
-  const btn = document.getElementById('ambient-btn');
-  const label = document.getElementById('ambient-label');
-  
-  if (state.ambientPlaying) {
-    if (label) label.innerText = `${translations[currentLang].ambient} ${capitalize(state.soundTheme)}`;
-    if (btn) btn.classList.add('border-[#7170ff]', 'bg-[#5e6ad2]/10');
-    startAmbientGenerator(state.soundTheme);
-  } else {
-    if (label) label.innerText = `${translations[currentLang].ambient} Off`;
-    if (btn) btn.classList.remove('border-[#7170ff]', 'bg-[#5e6ad2]/10');
-    stopAmbientGenerator();
-  }
-}
-
-function setAmbientSoundType(type) {
-  state.soundTheme = type;
-  if (state.ambientPlaying) {
-    stopAmbientGenerator();
-    startAmbientGenerator(type);
-    const label = document.getElementById('ambient-label');
-    if (label) label.innerText = `${translations[currentLang].ambient} ${capitalize(type)}`;
-  }
-}
-
-function startAmbientGenerator(type) {
-  try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const bufferSize = 2 * audioCtx.sampleRate;
-    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-    const output = noiseBuffer.getChannelData(0);
-    let lastOut = 0.0;
-    
-    for (let i = 0; i < bufferSize; i++) {
-      const white = Math.random() * 2 - 1;
-      output[i] = (lastOut + (0.02 * white)) / 1.02;
-      lastOut = output[i];
-      output[i] *= 0.12;
-    }
-    
-    ambientNode = audioCtx.createBufferSource();
-    ambientNode.buffer = noiseBuffer;
-    ambientNode.loop = true;
-    
-    const filter = audioCtx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 700;
-    
-    ambientGainNode = audioCtx.createGain();
-    ambientGainNode.gain.value = 0.5;
-    
-    ambientNode.connect(filter);
-    filter.connect(ambientGainNode);
-    ambientGainNode.connect(audioCtx.destination);
-    ambientNode.start();
-  } catch(e) {}
-}
-
-function stopAmbientGenerator() {
-  if (ambientNode) {
-    try { ambientNode.stop(); } catch(e) {}
-    ambientNode = null;
-  }
-}
-
-// ==================== TASK MANAGER ====================
-function renderTasks() {
-  const list = document.getElementById('task-list');
-  if (!list) return;
-  list.innerHTML = '';
-  
-  let completedCount = 0;
-  state.tasks.forEach(task => {
-    if (task.completed) completedCount++;
-    const div = document.createElement('div');
-    div.className = `flex items-center justify-between p-3 rounded-xl border transition-all ${task.active ? 'bg-[rgba(94,106,210,0.06)] border-[#5e6ad2]/40 shadow-sm' : 'bg-[rgba(255,255,255,0.02)] border-[rgba(255,255,255,0.05)] hover:border-[rgba(255,255,255,0.1)]'}`;
-    div.innerHTML = `
-      <div class="flex items-center space-x-3 flex-1">
-        <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id})" class="w-4 h-4 rounded border-[rgba(255,255,255,0.2)] bg-transparent text-[#5e6ad2] focus:ring-0 cursor-pointer">
-        <div>
-          <span class="text-xs ${task.completed ? 'line-through text-[#8a8f98]' : ''} block">${escapeHtml(task.text)}</span>
-          <span class="text-[10px] text-[#7170ff] bg-[#5e6ad2]/15 px-1.5 py-0.5 rounded font-mono">${escapeHtml(task.tag || 'General')}</span>
-        </div>
-      </div>
-      <div class="flex items-center space-x-2">
-        <button onclick="setActiveTask(${task.id})" class="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${task.active ? 'bg-[#5e6ad2] text-white' : 'text-[#8a8f98] hover:text-[#f7f8f8] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)]'}">
-          ${task.active ? 'Active' : 'Focus'}
-        </button>
-        <button onclick="deleteTask(${task.id})" class="text-[#8a8f98] hover:text-red-400 p-1">
-          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-        </button>
-      </div>
-    `;
-    list.appendChild(div);
+  ['focus', 'short', 'long'].forEach(function (mode) {
+    const tab = document.getElementById('mode-' + mode);
+    if (tab) tab.classList.toggle('active', state.timer.mode === mode);
   });
 
-  const progressText = document.getElementById('task-progress-text');
-  if (progressText) progressText.innerText = `${completedCount}/${state.tasks.length} ${translations[currentLang].completed}`;
-  
-  const activeTask = state.tasks.find(t => t.active);
-  const activeTaskName = document.getElementById('active-task-name');
-  if (activeTaskName) activeTaskName.innerText = activeTask ? activeTask.text : translations[currentLang].noneSelected;
-  
+  const counter = document.getElementById('session-counter');
+  if (counter) counter.textContent = state.timer.sessions + ' ' + t('sessions');
+  document.title = display + ' — FocusPulse';
   refreshIcons();
-  saveToLocalStorage();
 }
 
-function addTask(e) {
-  e.preventDefault();
-  const input = document.getElementById('new-task-input');
-  const tagSelect = document.getElementById('new-task-tag');
+function applyPreset(name) {
+  if (name === 'custom') return;
+  const preset = PRESETS[name];
+  if (!preset) return;
+  state.timer.durations = clone(preset);
+  syncDurationInputs();
+  setTimerMode(state.timer.mode);
+  saveState();
+}
+
+function saveCustomDurations() {
+  const focus = clampDuration(document.getElementById('duration-focus').value, 25, 180);
+  const shortBreak = clampDuration(document.getElementById('duration-short').value, 5, 60);
+  const longBreak = clampDuration(document.getElementById('duration-long').value, 15, 90);
+  state.timer.durations = { focus: focus, short: shortBreak, long: longBreak };
+  const preset = document.getElementById('preset-select');
+  if (preset) preset.value = 'custom';
+  setTimerMode(state.timer.mode);
+  saveState();
+  showToast(t('durationsSaved'));
+}
+
+function clampDuration(value, fallback, maximum) {
+  const number = Number.parseInt(value, 10);
+  return Number.isFinite(number) ? Math.min(maximum, Math.max(1, number)) : fallback;
+}
+
+function syncDurationInputs() {
+  document.getElementById('duration-focus').value = state.timer.durations.focus;
+  document.getElementById('duration-short').value = state.timer.durations.short;
+  document.getElementById('duration-long').value = state.timer.durations.long;
+  const presetName = Object.keys(PRESETS).find(function (key) {
+    return JSON.stringify(PRESETS[key]) === JSON.stringify(state.timer.durations);
+  });
+  document.getElementById('preset-select').value = presetName || 'custom';
+}
+
+function addTask(event) {
+  event.preventDefault();
+  const input = document.getElementById('task-input');
+  const tag = document.getElementById('task-tag');
   const text = input.value.trim();
   if (!text) return;
-  
-  state.tasks.push({
-    id: Date.now(),
-    text: text,
-    completed: false,
-    active: state.tasks.length === 0,
-    tag: tagSelect ? tagSelect.value : 'General'
-  });
+  state.tasks.unshift({ id: Date.now(), text: text, tag: tag.value, completed: false });
   input.value = '';
+  saveState();
   renderTasks();
 }
 
+function addRandomTask() {
+  const pool = RANDOM_TASKS[currentLang] || RANDOM_TASKS.id;
+  const used = new Set(state.tasks.map(function (task) { return task.text; }));
+  const available = pool.filter(function (task) { return !used.has(task.text); });
+  const source = available.length ? available : pool;
+  const task = source[Math.floor(Math.random() * source.length)];
+  state.tasks.unshift({ id: Date.now(), text: task.text, tag: task.tag, completed: false });
+  saveState();
+  renderTasks();
+  showToast(t('taskAdded'));
+}
+
 function toggleTask(id) {
-  const task = state.tasks.find(t => t.id === id);
-  if (task) {
-    task.completed = !task.completed;
-    renderTasks();
-  }
+  const task = state.tasks.find(function (item) { return item.id === id; });
+  if (!task) return;
+  task.completed = !task.completed;
+  if (task.completed) recordActivity();
+  saveState();
+  renderTasks();
 }
 
 function setActiveTask(id) {
-  state.tasks.forEach(t => t.active = (t.id === id));
+  state.activeTaskId = state.activeTaskId === id ? null : id;
+  saveState();
   renderTasks();
 }
 
 function deleteTask(id) {
-  state.tasks = state.tasks.filter(t => t.id !== id);
+  state.tasks = state.tasks.filter(function (task) { return task.id !== id; });
+  if (state.activeTaskId === id) state.activeTaskId = null;
+  saveState();
   renderTasks();
 }
 
-// ==================== MICRO-HABITS TRACKER ====================
-function renderHabits() {
-  const list = document.getElementById('habits-list');
-  if (!list) return;
+function renderTasks() {
+  const list = document.getElementById('task-list');
+  const empty = document.getElementById('empty-tasks');
+  if (!list || !empty) return;
   list.innerHTML = '';
+  empty.hidden = state.tasks.length > 0;
 
-  state.habits.forEach(habit => {
-    const div = document.createElement('div');
-    div.className = 'flex items-center justify-between p-3 rounded-xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] hover:border-[rgba(255,255,255,0.1)] transition-all';
-    div.innerHTML = `
-      <div class="flex items-center space-x-3">
-        <div class="p-2 rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] text-[#7170ff]">
-          <i data-lucide="${habit.icon}" class="w-4 h-4"></i>
-        </div>
-        <div>
-          <span class="text-xs font-medium block">${escapeHtml(habit.name)}</span>
-          <div class="flex items-center space-x-2 mt-0.5">
-            <span class="text-[10px] text-[#8a8f98] font-mono">Streak: ${habit.streak} days 🔥</span>
-            <span class="text-[10px] text-[#5e6ad2] bg-[#5e6ad2]/15 px-1.5 py-0.2 rounded">${escapeHtml(habit.category)}</span>
-          </div>
-        </div>
-      </div>
-      <div class="flex items-center space-x-2">
-        <button onclick="toggleHabit(${habit.id})" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center space-x-1.5 ${habit.completedToday ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-[rgba(255,255,255,0.03)] text-[#8a8f98] hover:text-[#f7f8f8] border border-[rgba(255,255,255,0.08)]'}">
-          <i data-lucide="${habit.completedToday ? 'check' : 'plus'}" class="w-3.5 h-3.5"></i>
-          <span>${habit.completedToday ? translations[currentLang].doneHabit : translations[currentLang].doHabit}</span>
-        </button>
-        <button onclick="deleteHabit(${habit.id})" class="text-[#8a8f98] hover:text-red-400 p-1">
-          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-        </button>
-      </div>
-    `;
-    list.appendChild(div);
+  state.tasks.forEach(function (task) {
+    const row = document.createElement('div');
+    row.className = 'task-row' + (task.completed ? ' completed' : '');
+    row.innerHTML =
+      '<button class="task-check" onclick="toggleTask(' + task.id + ')" aria-label="Toggle task"><i data-lucide="check"></i></button>' +
+      '<div class="task-copy"><span class="task-title">' + escapeHtml(task.text) + '</span><span class="task-tag">' + escapeHtml(task.tag) + '</span></div>' +
+      '<button class="focus-button' + (state.activeTaskId === task.id ? ' active' : '') + '" onclick="setActiveTask(' + task.id + ')">' +
+      (state.activeTaskId === task.id ? t('active') : t('focusAction')) + '</button>' +
+      '<button class="delete-button" onclick="deleteTask(' + task.id + ')" aria-label="' + t('delete') + '"><i data-lucide="trash-2"></i></button>';
+    list.appendChild(row);
   });
+
+  const active = state.tasks.find(function (task) { return task.id === state.activeTaskId; });
+  const activeName = document.getElementById('active-task-name');
+  if (activeName) activeName.textContent = active ? active.text : t('noneSelected');
   refreshIcons();
-  saveToLocalStorage();
+}
+
+function addHabit(event) {
+  event.preventDefault();
+  const input = document.getElementById('habit-input');
+  const name = input.value.trim();
+  if (!name) return;
+  state.habits.push({ id: Date.now(), name: name, completed: false });
+  input.value = '';
+  saveState();
+  renderHabits();
 }
 
 function toggleHabit(id) {
-  const habit = state.habits.find(h => h.id === id);
-  if (habit) {
-    habit.completedToday = !habit.completedToday;
-    habit.streak = Math.max(0, habit.streak + (habit.completedToday ? 1 : -1));
-    renderHabits();
-    renderHeatmap();
-    updateStatsDisplay();
-  }
+  const habit = state.habits.find(function (item) { return item.id === id; });
+  if (!habit) return;
+  habit.completed = !habit.completed;
+  if (habit.completed) recordActivity();
+  saveState();
+  renderHabits();
 }
 
 function deleteHabit(id) {
-  state.habits = state.habits.filter(h => h.id !== id);
+  state.habits = state.habits.filter(function (habit) { return habit.id !== id; });
+  saveState();
   renderHabits();
 }
 
-function openAddHabitModal() {
-  const modal = document.getElementById('habit-modal');
-  if (modal) modal.classList.remove('hidden');
-}
+function renderHabits() {
+  const list = document.getElementById('habits-list');
+  const progress = document.getElementById('habit-progress');
+  if (!list || !progress) return;
+  list.innerHTML = '';
 
-function closeAddHabitModal() {
-  const modal = document.getElementById('habit-modal');
-  if (modal) modal.classList.add('hidden');
-}
-
-function handleCreateHabit(e) {
-  e.preventDefault();
-  const name = document.getElementById('habit-name-input').value.trim();
-  const icon = document.getElementById('habit-icon-select').value;
-  const category = document.getElementById('habit-category-select').value || 'Habit';
-  if (!name) return;
-
-  state.habits.push({
-    id: Date.now(),
-    name,
-    icon,
-    completedToday: false,
-    streak: 1,
-    category
+  state.habits.forEach(function (habit) {
+    const row = document.createElement('div');
+    row.className = 'habit-row' + (habit.completed ? ' completed' : '');
+    row.innerHTML =
+      '<button class="habit-check" onclick="toggleHabit(' + habit.id + ')" aria-label="Toggle habit"><i data-lucide="check"></i></button>' +
+      '<span class="habit-name">' + escapeHtml(habit.name) + '</span>' +
+      '<button class="delete-button" onclick="deleteHabit(' + habit.id + ')" aria-label="' + t('delete') + '"><i data-lucide="trash-2"></i></button>';
+    list.appendChild(row);
   });
-  document.getElementById('habit-name-input').value = '';
-  closeAddHabitModal();
+
+  const completed = state.habits.filter(function (habit) { return habit.completed; }).length;
+  progress.textContent = completed + '/' + state.habits.length;
+  refreshIcons();
+}
+
+function toggleAmbient() {
+  state.ambient.playing = !state.ambient.playing;
+  if (state.ambient.playing) {
+    startAmbient();
+    showToast(t('ambientOn'));
+  } else {
+    stopAmbient();
+    showToast(t('ambientOff'));
+  }
+  updateAmbientUI();
+}
+
+function setAmbientType(type) {
+  state.ambient.type = type;
+  saveState();
+  if (state.ambient.playing) {
+    stopAmbient();
+    startAmbient();
+  }
+  updateAmbientUI();
+}
+
+function setAmbientVolume(value) {
+  state.ambient.volume = Math.min(100, Math.max(0, Number(value) || 0));
+  if (audioContext && ambientNodes.master) {
+    ambientNodes.master.gain.setTargetAtTime(state.ambient.volume / 250, audioContext.currentTime, 0.04);
+  }
+  saveState();
+  updateAmbientUI();
+}
+
+function ensureAudioContext() {
+  if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioContext.state === 'suspended') audioContext.resume();
+  return audioContext;
+}
+
+function createNoiseBuffer(context, type) {
+  const length = context.sampleRate * 4;
+  const buffer = context.createBuffer(1, length, context.sampleRate);
+  const data = buffer.getChannelData(0);
+  let last = 0;
+
+  for (let index = 0; index < length; index += 1) {
+    const white = Math.random() * 2 - 1;
+    if (type === 'brown' || type === 'fireplace') {
+      last = (last + 0.02 * white) / 1.02;
+      data[index] = last * 3.5;
+    } else if (type === 'pink' || type === 'rain' || type === 'forest' || type === 'library' || type === 'night') {
+      last = 0.985 * last + 0.15 * white;
+      data[index] = last * 0.35;
+    } else {
+      data[index] = white * 0.55;
+    }
+    if (type === 'fireplace' && Math.random() < 0.0008) data[index] += (Math.random() * 2 - 1) * 1.7;
+  }
+  return buffer;
+}
+
+function startAmbient() {
+  try {
+    stopAmbient();
+    const context = ensureAudioContext();
+    const type = state.ambient.type;
+    const master = context.createGain();
+    const filter = context.createBiquadFilter();
+    const source = context.createBufferSource();
+    const settings = {
+      rain: ['lowpass', 1800, 0.5], forest: ['bandpass', 900, 0.7], fireplace: ['lowpass', 700, 0.6],
+      ocean: ['lowpass', 500, 0.8], wind: ['bandpass', 650, 1.1], night: ['lowpass', 1100, 0.5],
+      library: ['lowpass', 420, 0.7], white: ['allpass', 1000, 0], pink: ['lowpass', 2400, 0.4],
+      brown: ['lowpass', 500, 0.5]
+    }[type] || ['lowpass', 1200, 0.5];
+
+    source.buffer = createNoiseBuffer(context, type);
+    source.loop = true;
+    filter.type = settings[0];
+    filter.frequency.value = settings[1];
+    filter.Q.value = settings[2];
+    master.gain.value = state.ambient.volume / 250;
+
+    source.connect(filter);
+    filter.connect(master);
+    master.connect(context.destination);
+    source.start();
+
+    ambientNodes = [source, filter, master];
+    ambientNodes.master = master;
+
+    if (type === 'ocean' || type === 'wind') {
+      const lfo = context.createOscillator();
+      const depth = context.createGain();
+      lfo.frequency.value = type === 'ocean' ? 0.09 : 0.17;
+      depth.gain.value = state.ambient.volume / 600;
+      lfo.connect(depth);
+      depth.connect(master.gain);
+      lfo.start();
+      ambientNodes.push(lfo, depth);
+    }
+  } catch (error) {
+    state.ambient.playing = false;
+    console.warn('Ambient audio is unavailable.', error);
+  }
+}
+
+function stopAmbient() {
+  ambientNodes.forEach(function (node) {
+    try {
+      if (typeof node.stop === 'function') node.stop();
+      if (typeof node.disconnect === 'function') node.disconnect();
+    } catch (error) {}
+  });
+  ambientNodes = [];
+}
+
+function updateAmbientUI() {
+  const selector = document.getElementById('ambient-select');
+  const slider = document.getElementById('volume-slider');
+  const value = document.getElementById('volume-value');
+  const icon = document.getElementById('ambient-icon');
+  const toggle = document.getElementById('ambient-toggle');
+
+  if (selector) selector.value = state.ambient.type;
+  if (slider) slider.value = String(state.ambient.volume);
+  if (value) value.textContent = state.ambient.volume + '%';
+  if (icon) icon.setAttribute('data-lucide', state.ambient.playing ? 'volume-2' : 'volume-x');
+  if (toggle) toggle.classList.toggle('active', state.ambient.playing);
+  refreshIcons();
+}
+
+function playChime() {
+  try {
+    const context = ensureAudioContext();
+    [523.25, 659.25, 783.99].forEach(function (frequency, index) {
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      const start = context.currentTime + index * 0.12;
+      oscillator.frequency.value = frequency;
+      oscillator.type = 'sine';
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.11, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.7);
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start(start);
+      oscillator.stop(start + 0.72);
+    });
+  } catch (error) {}
+}
+
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  window.clearTimeout(toastTimer);
+  toast.textContent = message;
+  toast.classList.add('show');
+  toastTimer = window.setTimeout(function () { toast.classList.remove('show'); }, 2200);
+}
+
+function updateAllUI() {
+  updateStreak();
+  updateTimerUI();
+  updateAmbientUI();
+  renderTasks();
   renderHabits();
 }
 
-// ==================== HEATMAP ====================
-function renderHeatmap() {
-  const grid = document.getElementById('heatmap-grid');
-  if (!grid) return;
-  grid.innerHTML = '';
-  
-  for (let i = 0; i < 28; i++) {
-    const cell = document.createElement('div');
-    const intensity = Math.random();
-    let bgClass = 'bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)]';
-    if (intensity > 0.75) bgClass = 'bg-[#5e6ad2]';
-    else if (intensity > 0.45) bgClass = 'bg-[#5e6ad2]/75';
-    else if (intensity > 0.2) bgClass = 'bg-[#5e6ad2]/35';
+window.addEventListener('DOMContentLoaded', function () {
+  loadState();
+  syncDurationInputs();
+  document.getElementById('ambient-select').value = state.ambient.type;
+  document.getElementById('volume-slider').value = String(state.ambient.volume);
+  window.focusPulseReady = true;
+  updateAllUI();
+});
 
-    cell.className = `w-full h-7 rounded-md transition-all hover:scale-105 cursor-pointer ${bgClass}`;
-    grid.appendChild(cell);
-  }
-}
-
-// ==================== ANALYTICS & MODALS ====================
-function openStatsModal() {
-  const modal = document.getElementById('analytics-modal');
-  if (modal) {
-    updateStatsDisplay();
-    modal.classList.remove('hidden');
-  }
-}
-
-function updateStatsDisplay() {
-  const totalPomodorosEl = document.getElementById('stat-total-pomodoros');
-  const focusHoursEl = document.getElementById('stat-focus-hours');
-  const habitRateEl = document.getElementById('stat-habit-rate');
-  const sessionsCountEl = document.getElementById('pomodoro-sessions-count');
-
-  if (totalPomodorosEl) totalPomodorosEl.textContent = String(state.timer.completedPomodoros);
-  if (focusHoursEl) focusHoursEl.textContent = `${(state.timer.totalFocusMinutes / 60).toFixed(1)}h`;
-
-  const completedHabits = state.habits.filter(habit => habit.completedToday).length;
-  const habitRate = state.habits.length
-    ? Math.round((completedHabits / state.habits.length) * 100)
-    : 0;
-  if (habitRateEl) habitRateEl.textContent = `${habitRate}%`;
-  if (sessionsCountEl) {
-    sessionsCountEl.textContent =
-      `${translations[currentLang].completedToday} ${state.timer.completedPomodoros}`;
-  }
-}
-function closeStatsModal() {
-  const modal = document.getElementById('analytics-modal');
-  if (modal) modal.classList.add('hidden');
-}
-function openTimerSettings() {
-  const modal = document.getElementById('settings-modal');
-  if (modal) modal.classList.remove('hidden');
-}
-function closeTimerSettings() {
-  const modal = document.getElementById('settings-modal');
-  if (modal) modal.classList.add('hidden');
-}
-function saveTimerSettings(e) {
-  e.preventDefault();
-  const p = parseInt(document.getElementById('setting-pomodoro-time').value) || 25;
-  const s = parseInt(document.getElementById('setting-short-time').value) || 5;
-  const l = parseInt(document.getElementById('setting-long-time').value) || 15;
-  state.pomodoroDurations.pomodoro = p * 60;
-  state.pomodoroDurations.shortBreak = s * 60;
-  state.pomodoroDurations.longBreak = l * 60;
-  setTimerMode(state.timer.mode);
-  closeTimerSettings();
-}
-
-function capitalize(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
+window.addEventListener('beforeunload', function () {
+  pauseTimer(false);
+  stopAmbient();
+  saveState();
+});

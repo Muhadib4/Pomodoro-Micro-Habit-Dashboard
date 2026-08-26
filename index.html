@@ -1,347 +1,207 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="id" data-theme="medieval-midnight">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FocusPulse &mdash; Pomodoro & Micro-Habit Dashboard</title>
-  
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Lucide Icons -->
+  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="FocusPulse — simple fantasy Pomodoro, tasks, ambient sounds, and daily streaks.">
+  <title>FocusPulse — Fantasy Focus Dashboard</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
-  
-  <!-- Modular CSS -->
   <link rel="stylesheet" href="./src/css/main.css">
-  
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace']
-          }
-        }
-      }
-    }
-  </script>
 </head>
-<body class="min-h-screen flex flex-col">
+<body>
+  <div class="ambient-orb orb-one" aria-hidden="true"></div>
+  <div class="ambient-orb orb-two" aria-hidden="true"></div>
 
-  <!-- Top Navigation Bar -->
-  <header class="border-b border-[var(--border-color)] bg-[var(--bg-secondary)]/80 backdrop-blur-md sticky top-0 z-50 px-6 h-16 flex items-center justify-between">
-    <div class="flex items-center space-x-4">
-      <div class="flex items-center space-x-2.5">
-        <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-[#5e6ad2] to-[#7170ff] flex items-center justify-center glow-indigo shadow-lg">
-          <i data-lucide="zap" class="w-4 h-4 text-white"></i>
-        </div>
-        <span class="font-semibold text-lg tracking-tight">Focus<span class="text-[#7170ff]">Pulse</span></span>
-      </div>
-      <div class="hidden md:flex items-center space-x-2 pl-4 border-l border-[var(--border-color)] text-xs text-[var(--text-dim)]">
-        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span data-i18n="streak" class="font-medium text-[var(--text-primary)]">Day 14 Streak 🔥</span>
-      </div>
-    </div>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="FocusPulse home">
+      <span class="brand-mark"><i data-lucide="sparkles"></i></span>
+      <span>Focus<span>Pulse</span></span>
+    </a>
 
-    <!-- Right Controls: Language, Theme, Ambient, Analytics -->
-    <div class="flex items-center space-x-3">
-      <!-- Language Switcher -->
-      <div class="flex items-center bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl p-0.5 space-x-1">
-        <button onclick="setLanguage('en')" id="lang-en" class="px-2 py-1 rounded-lg text-xs font-medium bg-[#5e6ad2] text-white transition-all">EN</button>
-        <button onclick="setLanguage('id')" id="lang-id" class="px-2 py-1 rounded-lg text-xs font-medium text-[var(--text-dim)] hover:text-[var(--text-primary)] transition-all">ID</button>
+    <div class="header-actions">
+      <div class="streak-pill" title="Daily activity streak">
+        <i data-lucide="flame"></i>
+        <strong id="streak-count">0</strong>
+        <span data-i18n="dayStreak">day streak</span>
       </div>
 
-      <!-- Theme Switcher -->
-      <button onclick="toggleTheme()" class="p-2 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all" title="Toggle Light/Dark Theme">
-        <i id="theme-icon" data-lucide="sun" class="w-4 h-4"></i>
-      </button>
+      <label class="compact-control">
+        <span class="sr-only" data-i18n="language">Language</span>
+        <select id="language-select" onchange="setLanguage(this.value)" aria-label="Language">
+          <option value="id">ID</option>
+          <option value="en">EN</option>
+        </select>
+      </label>
 
-      <!-- Ambient Sound Button -->
-      <button onclick="toggleAmbientSound()" id="ambient-btn" class="px-3 py-1.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-color)] text-xs text-[var(--text-muted)] flex items-center space-x-2 transition-all">
-        <i data-lucide="headphones" class="w-3.5 h-3.5 text-[#7170ff]"></i>
-        <span id="ambient-label">Ambient: Off</span>
-      </button>
-
-      <!-- Analytics Button -->
-      <button onclick="openStatsModal()" class="px-3 py-1.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-color)] text-xs text-[var(--text-muted)] flex items-center space-x-2 transition-all">
-        <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-[#7170ff]"></i>
-        <span data-i18n="analytics">Analytics</span>
-      </button>
+      <label class="compact-control theme-control">
+        <i data-lucide="palette"></i>
+        <select id="theme-select" onchange="setTheme(this.value)" aria-label="Theme"></select>
+      </label>
     </div>
   </header>
 
-  <!-- Main Workspace -->
-  <main class="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+  <main class="dashboard">
+    <section class="hero-card panel">
+      <div class="panel-eyebrow">
+        <span><i data-lucide="timer"></i> <span data-i18n="focusRitual">Focus ritual</span></span>
+        <span id="session-counter">0 sessions</span>
+      </div>
 
-    <!-- LEFT COLUMN: Pomodoro Timer & Tasks (7 Cols) -->
-    <div class="lg:col-span-7 space-y-6">
+      <div class="mode-tabs" role="tablist" aria-label="Timer mode">
+        <button id="mode-focus" class="mode-tab active" onclick="setTimerMode('focus')" data-i18n="focus">Focus</button>
+        <button id="mode-short" class="mode-tab" onclick="setTimerMode('short')" data-i18n="shortBreak">Short Break</button>
+        <button id="mode-long" class="mode-tab" onclick="setTimerMode('long')" data-i18n="longBreak">Long Break</button>
+      </div>
 
-      <!-- Pomodoro Widget Card -->
-      <section class="linear-card p-6 relative overflow-hidden">
-        <!-- Background subtle glow -->
-        <div class="absolute -top-24 -right-24 w-48 h-48 bg-[#5e6ad2]/15 rounded-full blur-3xl pointer-events-none"></div>
-
-        <!-- Mode selector tabs -->
-        <div class="flex items-center justify-between mb-6">
-          <div class="flex bg-[var(--bg-surface)] p-1 rounded-xl border border-[var(--border-subtle)]">
-            <button onclick="setTimerMode('pomodoro')" id="tab-pomodoro" data-i18n="pomodoro" class="px-4 py-1.5 rounded-lg text-xs font-medium transition-all bg-[#5e6ad2] text-white shadow-sm">Pomodoro</button>
-            <button onclick="setTimerMode('shortBreak')" id="tab-shortBreak" data-i18n="shortBreak" class="px-4 py-1.5 rounded-lg text-xs font-medium transition-all text-[var(--text-dim)] hover:text-[var(--text-primary)]">Short Break</button>
-            <button onclick="setTimerMode('longBreak')" id="tab-longBreak" data-i18n="longBreak" class="px-4 py-1.5 rounded-lg text-xs font-medium transition-all text-[var(--text-dim)] hover:text-[var(--text-primary)]">Long Break</button>
-          </div>
-          <button onclick="openTimerSettings()" class="text-[var(--text-dim)] hover:text-[var(--text-primary)] p-2 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-color)] transition-all" title="Timer Settings">
-            <i data-lucide="settings" class="w-4 h-4"></i>
-          </button>
+      <div class="timer-wrap">
+        <svg class="timer-ring" viewBox="0 0 260 260" aria-hidden="true">
+          <circle class="ring-track" cx="130" cy="130" r="116"></circle>
+          <circle id="timer-progress-ring" class="ring-progress" cx="130" cy="130" r="116"></circle>
+        </svg>
+        <div class="timer-copy">
+          <div id="timer-display" class="timer-display">25:00</div>
+          <div id="timer-status" class="timer-status" data-i18n="ready">Ready</div>
         </div>
+      </div>
 
-        <!-- Timer Display & Ring -->
-        <div class="flex flex-col items-center justify-center py-4">
-          <div class="relative flex items-center justify-center">
-            <!-- Circular Progress SVG -->
-            <svg class="w-64 h-64 transform -rotate-90">
-              <circle cx="128" cy="128" r="116" stroke="currentColor" stroke-width="6" class="text-[var(--border-subtle)]" fill="transparent"/>
-              <circle id="timer-progress-ring" cx="128" cy="128" r="116" stroke="currentColor" stroke-width="6" stroke-dasharray="729" stroke-dashoffset="0" stroke-linecap="round" class="text-[#5e6ad2] transition-all duration-1000" fill="transparent"/>
-            </svg>
-            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span id="timer-display" class="font-mono text-5xl font-bold tracking-tighter">25:00</span>
-              <span id="timer-status-text" data-i18n="ready" class="text-xs text-[var(--text-dim)] mt-2 font-medium tracking-wide uppercase">Ready to Focus</span>
-            </div>
-          </div>
+      <div class="timer-actions">
+        <button id="timer-toggle" class="button primary large" onclick="toggleTimer()">
+          <i id="timer-toggle-icon" data-lucide="play"></i>
+          <span id="timer-toggle-label" data-i18n="start">Start</span>
+        </button>
+        <button class="icon-button" onclick="resetTimer()" data-i18n-title="reset" title="Reset" aria-label="Reset">
+          <i data-lucide="rotate-ccw"></i>
+        </button>
+        <button class="icon-button" onclick="skipTimer()" data-i18n-title="skip" title="Skip" aria-label="Skip">
+          <i data-lucide="skip-forward"></i>
+        </button>
+      </div>
 
-          <!-- Timer Controls -->
-          <div class="flex items-center space-x-4 mt-8">
-            <button onclick="toggleTimer()" id="timer-toggle-btn" class="px-8 py-3 rounded-xl bg-[#5e6ad2] hover:bg-[#7170ff] text-white font-medium text-sm transition-all shadow-lg shadow-[#5e6ad2]/25 flex items-center space-x-2">
-              <i data-lucide="play" id="timer-toggle-icon" class="w-4 h-4 fill-current"></i>
-              <span id="timer-toggle-label" data-i18n="startFocus">Start Focus</span>
-            </button>
-            <button onclick="resetTimer()" class="p-3 rounded-xl bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] border border-[var(--border-color)] text-[var(--text-dim)] hover:text-[var(--text-primary)] transition-all" title="Reset Timer">
-              <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
-            </button>
-            <button onclick="skipTimer()" class="p-3 rounded-xl bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] border border-[var(--border-color)] text-[var(--text-dim)] hover:text-[var(--text-primary)] transition-all" title="Skip Session">
-              <i data-lucide="skip-forward" class="w-4 h-4"></i>
-            </button>
+      <div id="active-task-bar" class="active-task-bar">
+        <i data-lucide="swords"></i>
+        <span data-i18n="currentQuest">Current quest:</span>
+        <strong id="active-task-name" data-i18n="noneSelected">None selected</strong>
+      </div>
+
+      <details class="settings-drawer">
+        <summary><i data-lucide="sliders-horizontal"></i> <span data-i18n="pomodoroOptions">Pomodoro options</span></summary>
+        <div class="settings-content">
+          <label>
+            <span data-i18n="preset">Preset</span>
+            <select id="preset-select" onchange="applyPreset(this.value)">
+              <option value="quick">Quick Sprint — 15 / 3 / 8</option>
+              <option value="classic" selected>Classic — 25 / 5 / 15</option>
+              <option value="deep">Deep Work — 40 / 8 / 20</option>
+              <option value="flow">Flow State — 50 / 10 / 25</option>
+              <option value="epic">Epic Quest — 90 / 20 / 30</option>
+              <option value="custom">Custom</option>
+            </select>
+          </label>
+          <div class="duration-grid">
+            <label><span data-i18n="focus">Focus</span><input id="duration-focus" type="number" min="1" max="180" value="25"></label>
+            <label><span data-i18n="shortBreak">Short</span><input id="duration-short" type="number" min="1" max="60" value="5"></label>
+            <label><span data-i18n="longBreak">Long</span><input id="duration-long" type="number" min="1" max="90" value="15"></label>
           </div>
+          <button class="button secondary" onclick="saveCustomDurations()" data-i18n="applyDuration">Apply durations</button>
         </div>
+      </details>
+    </section>
 
-        <!-- Active Task linked to Pomodoro -->
-        <div class="mt-4 pt-4 border-t border-[var(--border-color)] flex items-center justify-between text-xs">
-          <div class="flex items-center space-x-2 text-[var(--text-dim)] truncate">
-            <i data-lucide="target" class="w-3.5 h-3.5 text-[#7170ff] shrink-0"></i>
-            <span data-i18n="currentTask">Current Focus Task:</span>
-            <span id="active-task-name" class="font-medium truncate">None selected</span>
-          </div>
-          <span id="pomodoro-sessions-count" class="font-mono shrink-0">Completed today: 0</span>
-        </div>
-      </section>
-
-      <!-- Task Manager Section -->
-      <section class="linear-card p-6">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center space-x-2">
-            <i data-lucide="check-circle-2" class="w-4 h-4 text-[#7170ff]"></i>
-            <h2 data-i18n="focusTasks" class="font-semibold text-sm tracking-tight">Focus Tasks & Queue</h2>
-          </div>
-          <div class="text-xs text-[var(--text-dim)]">
-            <span id="task-progress-text">0/0 completed</span>
-          </div>
-        </div>
-
-        <!-- Add Task Form -->
-        <form onsubmit="addTask(event)" class="flex flex-col sm:flex-row gap-2 mb-4">
-          <input type="text" id="new-task-input" data-i18n-placeholder="addTaskPlaceholder" placeholder="Add a new task for this session..." class="flex-1 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-xs placeholder-[var(--text-dim)] focus:outline-none focus:border-[#5e6ad2] transition-all">
-          <select id="new-task-tag" class="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl px-3 py-2.5 text-xs text-[var(--text-muted)] focus:outline-none focus:border-[#5e6ad2]">
-            <option value="Dev">💻 Dev</option>
-            <option value="Design">🎨 Design</option>
-            <option value="Habit">⚡ Habit</option>
-            <option value="Writing">📝 Writing</option>
-          </select>
-          <button type="submit" class="px-4 py-2.5 rounded-xl bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] border border-[var(--border-color)] text-xs font-medium transition-all flex items-center justify-center space-x-1.5 shrink-0">
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-            <span data-i18n="addTaskBtn">Add Task</span>
-          </button>
-        </form>
-
-        <!-- Task List -->
-        <div id="task-list" class="space-y-2.5 max-h-64 overflow-y-auto custom-scrollbar pr-1"></div>
-      </section>
-
-    </div>
-
-    <!-- RIGHT COLUMN: Micro-Habits Tracker & Daily Goals (5 Cols) -->
-    <div class="lg:col-span-5 space-y-6">
-
-      <!-- Micro-Habits Section -->
-      <section class="linear-card p-6">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center space-x-2">
-            <i data-lucide="activity" class="w-4 h-4 text-[#7170ff]"></i>
-            <h2 data-i18n="microHabits" class="font-semibold text-sm tracking-tight">Micro-Habits Tracker</h2>
-          </div>
-          <button onclick="openAddHabitModal()" class="text-xs text-[#7170ff] hover:text-[#828fff] flex items-center space-x-1 font-medium transition-all">
-            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
-            <span data-i18n="newHabit">New Habit</span>
-          </button>
-        </div>
-
-        <p data-i18n="habitsDesc" class="text-xs text-[var(--text-dim)] mb-4">Tiny 2-minute daily habits that compound into massive results over time.</p>
-
-        <!-- Habits List -->
-        <div id="habits-list" class="space-y-3"></div>
-      </section>
-
-      <!-- Weekly Consistency Matrix / Heatmap Card -->
-      <section class="linear-card p-6">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center space-x-2">
-            <i data-lucide="calendar" class="w-4 h-4 text-[#7170ff]"></i>
-            <h2 data-i18n="consistencyMatrix" class="font-semibold text-sm tracking-tight">Consistency Matrix</h2>
-          </div>
-          <span class="text-xs text-emerald-400 font-medium">14 Day Streak</span>
-        </div>
-
-        <p data-i18n="matrixDesc" class="text-xs text-[var(--text-dim)] mb-4">Your daily micro-habit and focus completion overview (past 4 weeks).</p>
-
-        <!-- Heatmap Grid Container -->
-        <div id="heatmap-grid" class="grid grid-cols-7 gap-2"></div>
-
-        <div class="flex items-center justify-between mt-4 pt-4 border-t border-[var(--border-color)] text-[11px] text-[var(--text-dim)]">
-          <span data-i18n="less">Less</span>
-          <div class="flex items-center space-x-1">
-            <div class="w-3 h-3 rounded bg-[var(--bg-surface)] border border-[var(--border-color)]"></div>
-            <div class="w-3 h-3 rounded bg-[#5e6ad2]/35"></div>
-            <div class="w-3 h-3 rounded bg-[#5e6ad2]/75"></div>
-            <div class="w-3 h-3 rounded bg-[#5e6ad2]"></div>
-          </div>
-          <span data-i18n="more">More</span>
-        </div>
-      </section>
-
-      <!-- Daily Motivation / AI Tip Card -->
-      <section class="bg-gradient-to-br from-[var(--bg-surface)] to-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl p-6 relative overflow-hidden">
-        <div class="flex items-start space-x-3">
-          <div class="p-2 rounded-xl bg-[#5e6ad2]/10 border border-[#5e6ad2]/20 text-[#7170ff] shrink-0">
-            <i data-lucide="sparkles" class="w-4 h-4"></i>
-          </div>
+    <aside class="side-stack">
+      <section class="panel compact-panel">
+        <div class="section-heading">
           <div>
-            <h3 data-i18n="focusInsight" class="text-xs font-semibold mb-1">Focus Insight & AI Coach</h3>
-            <p id="ai-insight-text" data-i18n="defaultInsight" class="text-xs text-[var(--text-muted)] leading-relaxed">"You are most productive during morning Pomodoro sessions. Keep up the momentum!"</p>
+            <span class="section-kicker" data-i18n="soundscape">Soundscape</span>
+            <h2 data-i18n="ambientWorld">Ambient world</h2>
           </div>
+          <button id="ambient-toggle" class="icon-button" onclick="toggleAmbient()" aria-label="Toggle ambient">
+            <i id="ambient-icon" data-lucide="volume-x"></i>
+          </button>
         </div>
+
+        <label class="field">
+          <span data-i18n="chooseAmbient">Choose ambient</span>
+          <select id="ambient-select" onchange="setAmbientType(this.value)">
+            <option value="rain">🌧️ Castle Rain</option>
+            <option value="forest">🌲 Enchanted Forest</option>
+            <option value="fireplace">🔥 Tavern Fireplace</option>
+            <option value="ocean">🌊 Mystic Ocean</option>
+            <option value="wind">🍃 Mountain Wind</option>
+            <option value="night">🌙 Moonlit Night</option>
+            <option value="library">📚 Ancient Library</option>
+            <option value="white">◻️ White Noise</option>
+            <option value="pink">🌸 Pink Noise</option>
+            <option value="brown">🟤 Brown Noise</option>
+          </select>
+        </label>
+
+        <label class="volume-field">
+          <span><span data-i18n="volume">Volume</span> <strong id="volume-value">35%</strong></span>
+          <input id="volume-slider" type="range" min="0" max="100" value="35" oninput="setAmbientVolume(this.value)">
+        </label>
       </section>
 
-    </div>
+      <section class="panel compact-panel">
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker" data-i18n="dailyProgress">Daily progress</span>
+            <h2 data-i18n="microHabits">Micro habits</h2>
+          </div>
+          <span id="habit-progress" class="progress-chip">0/3</span>
+        </div>
+        <div id="habits-list" class="habit-list"></div>
+        <form class="inline-form" onsubmit="addHabit(event)">
+          <input id="habit-input" maxlength="60" data-i18n-placeholder="newHabitPlaceholder" placeholder="Add a tiny habit..." required>
+          <button class="icon-button" type="submit" aria-label="Add habit"><i data-lucide="plus"></i></button>
+        </form>
+      </section>
+    </aside>
 
+    <section class="panel tasks-panel">
+      <div class="section-heading tasks-heading">
+        <div>
+          <span class="section-kicker" data-i18n="questBoard">Quest board</span>
+          <h2 data-i18n="todayTasks">Today's tasks</h2>
+        </div>
+        <button class="button surprise" onclick="addRandomTask()">
+          <i data-lucide="dices"></i>
+          <span data-i18n="surpriseMe">Surprise me</span>
+        </button>
+      </div>
+
+      <form class="task-form" onsubmit="addTask(event)">
+        <input id="task-input" maxlength="100" data-i18n-placeholder="taskPlaceholder" placeholder="What do you want to finish?" required>
+        <select id="task-tag" aria-label="Task category">
+          <option value="Study">📖 Study</option>
+          <option value="Code">💻 Code</option>
+          <option value="Life">✨ Life</option>
+          <option value="Creative">🎨 Creative</option>
+          <option value="Random">🎲 Random</option>
+        </select>
+        <button class="button primary" type="submit"><i data-lucide="plus"></i><span data-i18n="addQuest">Add quest</span></button>
+      </form>
+
+      <div id="task-list" class="task-list"></div>
+      <div id="empty-tasks" class="empty-state">
+        <i data-lucide="scroll-text"></i>
+        <p data-i18n="emptyTasks">Your quest board is empty.</p>
+        <button class="text-button" onclick="addRandomTask()" data-i18n="tryRandom">Try a random task</button>
+      </div>
+    </section>
   </main>
 
-  <!-- Footer -->
-  <footer class="border-t border-[var(--border-color)] py-4 text-center text-xs text-[var(--text-dim)]">
-    <span data-i18n="footer">FocusPulse &mdash; Pomodoro & Micro-Habit Dashboard &bull; Advanced Edition</span>
+  <footer>
+    <span>FocusPulse</span> <span aria-hidden="true">✦</span>
+    <span data-i18n="footerText">Small actions, legendary consistency.</span>
   </footer>
 
-  <!-- ==================== MODALS ==================== -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <!-- NEW HABIT MODAL -->
-  <div id="habit-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-    <div class="linear-card p-6 w-full max-w-md shadow-2xl relative bg-[var(--bg-secondary)]">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-sm font-semibold">Create New Micro-Habit</h3>
-        <button onclick="closeAddHabitModal()" class="text-[var(--text-dim)] hover:text-[var(--text-primary)]">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-      <form onsubmit="handleCreateHabit(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-medium text-[var(--text-dim)] mb-1">Habit Name</label>
-          <input type="text" id="habit-name-input" required placeholder="e.g., Drink 500ml Water" class="w-full bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#5e6ad2]">
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-medium text-[var(--text-dim)] mb-1">Icon</label>
-            <select id="habit-icon-select" class="w-full bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-xs text-[var(--text-muted)] focus:outline-none focus:border-[#5e6ad2]">
-              <option value="droplet">💧 Hydration</option>
-              <option value="book-open">📖 Reading</option>
-              <option value="activity">🧘 Health</option>
-              <option value="code">💻 Code</option>
-              <option value="zap">⚡ Energy</option>
-              <option value="wind">🌬️ Breathe</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-[var(--text-dim)] mb-1">Category</label>
-            <input type="text" id="habit-category-select" placeholder="e.g., Wellness" class="w-full bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#5e6ad2]">
-          </div>
-        </div>
-        <div class="flex justify-end space-x-2 pt-2">
-          <button type="button" onclick="closeAddHabitModal()" class="px-4 py-2 rounded-xl bg-[var(--bg-surface)] text-xs text-[var(--text-dim)]">Cancel</button>
-          <button type="submit" class="px-4 py-2 rounded-xl bg-[#5e6ad2] hover:bg-[#7170ff] text-xs font-medium text-white shadow">Create Habit</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- TIMER SETTINGS MODAL -->
-  <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-    <div class="linear-card p-6 w-full max-w-md shadow-2xl relative bg-[var(--bg-secondary)]">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-sm font-semibold">Timer Durations (Minutes)</h3>
-        <button onclick="closeTimerSettings()" class="text-[var(--text-dim)] hover:text-[var(--text-primary)]">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-      <form onsubmit="saveTimerSettings(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-medium text-[var(--text-dim)] mb-1">Pomodoro Duration</label>
-          <input type="number" id="setting-pomodoro-time" min="1" max="60" value="25" class="w-full bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#5e6ad2]">
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-[var(--text-dim)] mb-1">Short Break Duration</label>
-          <input type="number" id="setting-short-time" min="1" max="30" value="5" class="w-full bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#5e6ad2]">
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-[var(--text-dim)] mb-1">Long Break Duration</label>
-          <input type="number" id="setting-long-time" min="1" max="60" value="15" class="w-full bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#5e6ad2]">
-        </div>
-        <div class="flex justify-end space-x-2 pt-2">
-          <button type="button" onclick="closeTimerSettings()" class="px-4 py-2 rounded-xl bg-[var(--bg-surface)] text-xs text-[var(--text-dim)]">Cancel</button>
-          <button type="submit" class="px-4 py-2 rounded-xl bg-[#5e6ad2] hover:bg-[#7170ff] text-xs font-medium text-white shadow">Save Changes</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- ANALYTICS MODAL -->
-  <div id="analytics-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-    <div class="linear-card p-6 w-full max-w-lg shadow-2xl relative bg-[var(--bg-secondary)]">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-sm font-semibold">Productivity & Habit Analytics</h3>
-        <button onclick="closeStatsModal()" class="text-[var(--text-dim)] hover:text-[var(--text-primary)]">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-      <div class="space-y-4">
-        <div class="grid grid-cols-3 gap-3">
-          <div class="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl p-4 text-center">
-            <span id="stat-total-pomodoros" class="block font-mono text-2xl font-bold">12</span>
-            <span class="text-[11px] text-[var(--text-dim)]">Pomodoros Done</span>
-          </div>
-          <div class="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl p-4 text-center">
-            <span id="stat-focus-hours" class="block font-mono text-2xl font-bold text-[#7170ff]">5.2h</span>
-            <span class="text-[11px] text-[var(--text-dim)]">Total Focus Time</span>
-          </div>
-          <div class="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl p-4 text-center">
-            <span id="stat-habit-rate" class="block font-mono text-2xl font-bold text-emerald-400">88%</span>
-            <span class="text-[11px] text-[var(--text-dim)]">Habit Success</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modular JavaScript Scripts -->
   <script src="./src/js/i18n.js"></script>
   <script src="./src/js/theme.js"></script>
   <script src="./src/js/app.js"></script>
