@@ -40,6 +40,10 @@
     </div>
 
     <div class="header-actions">
+      <button id="color-mode-toggle" class="color-mode-toggle" type="button" onclick="toggleColorMode()" aria-label="Toggle dark mode" title="Toggle dark mode">
+        <i id="color-mode-icon" data-lucide="moon"></i>
+        <span id="color-mode-label">Dark</span>
+      </button>
       <label class="language-picker" aria-label="Language">
         <i data-lucide="languages"></i>
         <select id="language-select" onchange="setLanguage(this.value)">
