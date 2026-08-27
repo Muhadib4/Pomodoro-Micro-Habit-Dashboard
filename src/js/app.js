@@ -248,6 +248,9 @@ function toggleTimer() {
 
 function startTimer() {
   if (state.timer.isRunning) return;
+  // Unlock Web Audio during the user's click so the completion alarm is not
+  // blocked by browser autoplay policies many minutes later.
+  try { ensureAudioContext(); } catch (error) {}
   state.timer.isRunning = true;
   state.timer.intervalId = window.setInterval(function () {
     state.timer.timeLeft = Math.max(0, state.timer.timeLeft - 1);
@@ -282,7 +285,7 @@ function skipTimer() {
 
 function completeTimer() {
   pauseTimer(false);
-  playChime();
+  playChime(state.timer.mode);
 
   if (state.timer.mode === 'focus') {
     state.timer.sessions += 1;
@@ -720,22 +723,25 @@ function updateAmbientUI() {
   refreshIcons();
 }
 
-function playChime() {
+function playChime(mode) {
   try {
     const context = ensureAudioContext();
-    [523.25, 659.25, 783.99].forEach(function (frequency, index) {
+    const notes = mode === 'focus'
+      ? [523.25, 659.25, 783.99, 1046.5]
+      : [783.99, 659.25, 523.25];
+    notes.forEach(function (frequency, index) {
       const oscillator = context.createOscillator();
       const gain = context.createGain();
-      const start = context.currentTime + index * 0.12;
+      const start = context.currentTime + index * 0.16;
       oscillator.frequency.value = frequency;
-      oscillator.type = 'sine';
+      oscillator.type = index === notes.length - 1 ? 'triangle' : 'sine';
       gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(0.11, start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.7);
+      gain.gain.exponentialRampToValueAtTime(0.16, start + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.85);
       oscillator.connect(gain);
       gain.connect(context.destination);
       oscillator.start(start);
-      oscillator.stop(start + 0.72);
+      oscillator.stop(start + 0.88);
     });
   } catch (error) {}
 }
