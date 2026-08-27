@@ -32,9 +32,38 @@ const DESIGN_THEMES = [
 ];
 
 let currentThemeId = localStorage.getItem('focuspulse_design_theme') || 'bento-grid';
+let currentColorMode = localStorage.getItem('focuspulse_color_mode') ||
+  (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 
 function getCurrentTheme() {
   return DESIGN_THEMES.find(function(theme) { return theme.id === currentThemeId; }) || DESIGN_THEMES[0];
+}
+function setColorMode(mode, announce) {
+  currentColorMode = mode === 'light' ? 'light' : 'dark';
+  localStorage.setItem('focuspulse_color_mode', currentColorMode);
+  document.documentElement.dataset.colorMode = currentColorMode;
+  const icon = document.getElementById('color-mode-icon');
+  const label = document.getElementById('color-mode-label');
+  const button = document.getElementById('color-mode-toggle');
+  const isDark = currentColorMode === 'dark';
+  if (icon) icon.setAttribute('data-lucide', isDark ? 'moon' : 'sun');
+  if (label) label.textContent = isDark ? 'Dark' : 'Light';
+  if (button) {
+    const action = isDark ? 'Switch to light mode' : 'Switch to dark mode';
+    button.setAttribute('aria-label', action);
+    button.title = action;
+  }
+  window.requestAnimationFrame(function() {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+    if (meta && bg) meta.content = bg;
+    if (window.lucide) window.lucide.createIcons();
+  });
+  renderThemePicker();
+  if (announce && typeof showToast === 'function') showToast((isDark ? 'Dark' : 'Light') + ' mode active');
+}
+function toggleColorMode() {
+  setColorMode(currentColorMode === 'dark' ? 'light' : 'dark', true);
 }
 function setTheme(themeId, userInitiated) {
   const theme = DESIGN_THEMES.find(function(item) { return item.id === themeId; }) || DESIGN_THEMES[0];
@@ -68,7 +97,7 @@ function renderThemePicker() {
     button.onclick = function() { setTheme(theme.id, true); };
     button.innerHTML =
       '<div class="theme-preview ' + theme.previewClass + '" style="--preview-bg:' + p.bg + ';--preview-panel:' + p.panel + ';--preview-border:' + p.border + ';--preview-panel-border:' + p.panelBorder + ';--preview-radius:' + p.radius + ';--preview-shadow:' + p.shadow + '"><span></span><span></span><span></span><span></span></div>' +
-      '<div class="theme-card-copy"><strong>' + theme.name + '</strong><small>' + theme.description + '</small><div class="theme-card-meta"><span>' + theme.badge + '</span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 4 4L19 6"/></svg></i></div></div>';
+      '<div class="theme-card-copy"><strong>' + theme.name + '</strong><small>' + theme.description + '</small><div class="theme-card-meta"><span>' + theme.badge + ' · Dark + Light</span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 4 4L19 6"/></svg></i></div></div>';
     grid.appendChild(button);
   });
   renderThemeSpotlight();
@@ -80,7 +109,7 @@ function renderThemeSpotlight() {
   const p = theme.preview;
   spotlight.innerHTML =
     '<div class="spotlight-preview theme-preview ' + theme.previewClass + '" style="--preview-bg:' + p.bg + ';--preview-panel:' + p.panel + ';--preview-border:' + p.border + ';--preview-panel-border:' + p.panelBorder + ';--preview-radius:' + p.radius + ';--preview-shadow:' + p.shadow + '"><span></span><span></span><span></span><span></span></div>' +
-    '<div class="spotlight-copy"><span class="spotlight-kicker">CURRENT EXPERIENCE</span><h4>' + theme.name + '</h4><p>' + theme.description + '</p><div><span>' + theme.bestFor + '</span><strong>✓ Active</strong></div></div>';
+    '<div class="spotlight-copy"><span class="spotlight-kicker">CURRENT EXPERIENCE · ' + currentColorMode.toUpperCase() + '</span><h4>' + theme.name + '</h4><p>' + theme.description + '</p><div><span>' + theme.bestFor + '</span><strong>✓ Active</strong></div></div>';
 }
 function openDesignStudio(tab) {
   const modal = document.getElementById('studio-modal');
@@ -116,6 +145,7 @@ window.addEventListener('keydown', function(event) {
   if (event.key === 'Escape') closeDesignStudio();
 });
 window.addEventListener('DOMContentLoaded', function() {
+  setColorMode(currentColorMode, false);
   setTheme(currentThemeId, false);
   renderThemePicker();
 });
