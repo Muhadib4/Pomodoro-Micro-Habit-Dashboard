@@ -8,6 +8,11 @@
   --grid-gap: 16px; --panel-padding: 22px;
 }
 * { box-sizing: border-box; }
+html, body, *, .studio-scroll, .task-list, .habit-list {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar { width: 0; height: 0; display: none; }
 html { color-scheme: dark; background: var(--bg); }
 body {
   margin: 0; min-height: 100vh; overflow-x: hidden; color: var(--text); background: var(--bg);
@@ -45,6 +50,13 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .status-chip svg { width: 14px; color: var(--accent); }
 .status-chip strong { color: var(--text); font: 700 12px "JetBrains Mono"; }
 .header-actions { display: flex; gap: 8px; }
+.color-mode-toggle {
+  min-height:46px; padding:0 12px; display:flex; align-items:center; gap:7px;
+  border:1px solid var(--border); border-radius:12px; color:var(--text); background:var(--surface);
+  font-size:10px; font-weight:700; transition:.18s ease;
+}
+.color-mode-toggle:hover { transform:translateY(-1px); border-color:color-mix(in srgb,var(--accent) 40%,var(--border)); }
+.color-mode-toggle svg { width:15px; color:var(--accent); }
 .language-picker {
   min-height: 46px; padding: 0 10px; display: flex; align-items: center; gap: 6px;
   border: 1px solid var(--border); border-radius: 12px; background: var(--surface);
@@ -382,6 +394,56 @@ html[data-theme="liquid-glass"] .ambient-visual { min-height:150px; }
 html[data-theme="liquid-glass"] .tasks-panel, html[data-theme="liquid-glass"] .habits-panel { min-height:310px; }
 html[data-theme="liquid-glass"] .studio-sheet { background:rgba(12,28,58,.78); backdrop-filter:blur(35px); box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 35px 100px rgba(0,7,25,.55); }
 
+/* Every visual language has an independent light and dark palette. */
+html[data-color-mode="dark"] { color-scheme:dark; }
+html[data-color-mode="light"] { color-scheme:light; }
+
+html[data-theme="bento-grid"][data-color-mode="light"] {
+  --bg:#eef1f5; --panel:#fff; --panel-2:#f7f8fa; --surface:#edf0f4; --text:#171a20; --muted:#667080; --dim:#9aa3b1;
+  --border:rgba(16,24,40,.1); --accent:#62a919; --accent-2:#7259df; --accent-text:#fff; --success:#289966; --shadow:0 18px 45px rgba(32,42,58,.1);
+}
+html[data-theme="bento-grid"][data-color-mode="light"] body { background:linear-gradient(145deg,#f7f9fb,#e8edf3); }
+
+html[data-theme="minimalism"][data-color-mode="dark"] {
+  --bg:#101110; --panel:#101110; --panel-2:#171817; --surface:#1c1e1c; --text:#f0f0eb; --muted:#969991; --dim:#62665f;
+  --border:rgba(255,255,245,.13); --accent:#f0f0eb; --accent-2:#b6b9b2; --accent-text:#111; --success:#73c99b;
+}
+html[data-theme="minimalism"][data-color-mode="dark"] .topbar { background:rgba(16,17,16,.93); }
+html[data-theme="minimalism"][data-color-mode="dark"] .ring-track { stroke:#292b28; }
+html[data-theme="minimalism"][data-color-mode="dark"] .studio-sheet { background:#111210; }
+
+html[data-theme="maximalism"][data-color-mode="light"] {
+  --bg:#fff0d5; --panel:#fff9ed; --panel-2:#fff; --surface:rgba(255,255,255,.68); --text:#28113d; --muted:#795d86; --dim:#a98eae;
+  --border:rgba(62,18,78,.16); --accent:#e62e84; --accent-2:#6945df; --accent-text:#fff; --success:#008b62; --shadow:0 22px 50px rgba(93,41,105,.18);
+}
+html[data-theme="maximalism"][data-color-mode="light"] body { background:radial-gradient(circle at 10% 15%,#ffd53d 0,transparent 27%),radial-gradient(circle at 88% 18%,#ff9dca 0,transparent 26%),radial-gradient(circle at 60% 90%,#8be1ff 0,transparent 34%),#fff0d5; }
+html[data-theme="maximalism"][data-color-mode="light"] .timer-panel { background:linear-gradient(160deg,#fff,#eadfff); }
+html[data-theme="maximalism"][data-color-mode="light"] .tasks-panel { background:linear-gradient(145deg,#ffb6d8,#ffd6ea); }
+html[data-theme="maximalism"][data-color-mode="light"] .ambient-panel { background:linear-gradient(145deg,#aee9ff,#d6dcff); }
+html[data-theme="maximalism"][data-color-mode="light"] .habits-panel { background:linear-gradient(145deg,#d9c8ff,#c8d5ff); }
+html[data-theme="maximalism"][data-color-mode="light"] .pulse-panel { background:linear-gradient(120deg,#ffbf7e,#ffa7c8); }
+html[data-theme="maximalism"][data-color-mode="light"] .studio-sheet { background:#fff4e8; }
+
+html[data-theme="brutalism"][data-color-mode="dark"] {
+  --bg:#0c0c0c; --panel:#171717; --panel-2:#202020; --surface:#252525; --text:#fff; --muted:#c7c7c7; --dim:#858585;
+  --border:#f5f5f5; --accent:#ff5830; --accent-2:#ffe500; --accent-text:#080808; --success:#4bea9b; --shadow:7px 7px 0 #ffed00;
+}
+html[data-theme="brutalism"][data-color-mode="dark"] body { background:#0c0c0c; }
+html[data-theme="brutalism"][data-color-mode="dark"] .topbar,
+html[data-theme="brutalism"][data-color-mode="dark"] .studio-sheet { border-color:#f5f5f5; background:#171717; box-shadow:8px 8px 0 #ffed00; }
+html[data-theme="brutalism"][data-color-mode="dark"] .panel { border-color:#f5f5f5; }
+html[data-theme="brutalism"][data-color-mode="dark"] .mode-switch,
+html[data-theme="brutalism"][data-color-mode="dark"] .active-focus,
+html[data-theme="brutalism"][data-color-mode="dark"] .task-row,
+html[data-theme="brutalism"][data-color-mode="dark"] .habit-row { border-color:#f5f5f5; }
+
+html[data-theme="liquid-glass"][data-color-mode="light"] {
+  --bg:#dff5ff; --panel:rgba(255,255,255,.42); --panel-2:rgba(255,255,255,.58); --surface:rgba(255,255,255,.4); --text:#11243b; --muted:#587089; --dim:#87a0b7;
+  --border:rgba(255,255,255,.72); --accent:#087fba; --accent-2:#805bd7; --accent-text:#fff; --success:#128963; --shadow:0 25px 60px rgba(51,101,135,.18);
+}
+html[data-theme="liquid-glass"][data-color-mode="light"] body { background:radial-gradient(circle at 18% 18%,#9eeaff 0,transparent 34%),radial-gradient(circle at 78% 12%,#d4bcff 0,transparent 31%),radial-gradient(circle at 58% 85%,#9ff3dc 0,transparent 35%),#dff5ff; }
+html[data-theme="liquid-glass"][data-color-mode="light"] .studio-sheet { background:rgba(235,249,255,.76); }
+
 @media (max-width:1050px) {
   html[data-theme] .workspace { grid-template-columns:1fr 1fr; grid-template-areas:"timer tasks" "timer ambient" "habits pulse"; }
   html[data-theme] .timer-panel { min-height:610px; }
@@ -394,6 +456,7 @@ html[data-theme="liquid-glass"] .studio-sheet { background:rgba(12,28,58,.78); b
   .header-status { margin-left:auto; }
   .header-actions { width:100%; }
   .language-picker { flex:1; }
+  .color-mode-toggle { flex:1; justify-content:center; }
   .studio-button { flex:2; }
   html[data-theme] .workspace { grid-template-columns:1fr; grid-template-areas:"timer" "ambient" "tasks" "habits" "pulse"; }
   html[data-theme] .panel { transform:none !important; min-height:auto; }
@@ -413,6 +476,7 @@ html[data-theme="liquid-glass"] .studio-sheet { background:rgba(12,28,58,.78); b
   .status-chip span { display:none; }
   .studio-button { min-width:0; }
   .studio-button small { display:none; }
+  .color-mode-toggle span { display:none; }
   .timer-stage { width:240px; }
   .timer-core span { font-size:46px; }
   .task-composer { grid-template-columns:1fr 38px; }
